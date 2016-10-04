@@ -10,7 +10,13 @@ from filedb import FileClient
 
 from his.orm import Account
 
+from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
+    WriteError, DirectoryNotEmpty
+
 __all__ = ['Inode']
+
+
+database = MySQLDatabase
 
 
 class HISFSModel(Model):
@@ -18,8 +24,11 @@ class HISFSModel(Model):
 
     class Meta:
         database = MySQLDatabase(
-            # TODO: configure
-            )
+            'his_fs',
+            host='localhost',
+            user='crm',
+            passwd='Z"XO;$2K+>XEo}jK>6-+}|U@,|E/6_&W',
+            closing=True)
         schema = database.database
 
     id = PrimaryKeyField()
