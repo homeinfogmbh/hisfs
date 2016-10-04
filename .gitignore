@@ -1,0 +1,7 @@
+build
+.installed_files.txt
+*.pyc
+*~
+*.egg-info
+setup.cfg
+dist
