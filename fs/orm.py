@@ -120,6 +120,25 @@ class Inode(HISFSModel):
             raise ValueError()
 
     @classmethod
+    def getrel(cls, name, parent, owner, group):
+        """Get  inode by relative properties.
+
+        XXX: Only <parent> may be None for root nodes.
+        """
+        if parent is None:
+            return cls.get(
+                (cls._name == name) &
+                (cls.parent >> None) &
+                (cls.owner == owner) &
+                (cls.group == group))
+        else:
+            return cls.get(
+                (cls._name == name) &
+                (cls.parent == parent) &
+                (cls.owner == owner) &
+                (cls.group == group))
+
+    @classmethod
     def root(cls, owner=None, group=None):
         """Yields elements of the respective root folder"""
         for record in cls.by_owner(owner=owner, group=group):
@@ -136,26 +155,15 @@ class Inode(HISFSModel):
             node = revpath.pop()
             walked.append(node)
 
-            if parent is None:
-                for record in cls.by_owner(owner=owner, group=group):
-                    if record.parent is None and record.name == node:
-                        if record.isdir or not revpath:
-                            parent = record
-                            break
-                        else:
-                            raise NotADirectory(cls.PATHSEP.join(walked))
-                else:
-                    raise NoSuchNode(cls.PATHSEP.join(walked))
+            try:
+                parent = cls.getrel(node, parent, owner=owner, group=group)
+            except DoesNotExist:
+                raise NoSuchNode(cls.PATHSEP.join(walked))
             else:
-                for record in cls.by_owner(owner=owner, group=group):
-                    if record.parent == parent and record.name == node:
-                        if record.isdir or not revpath:
-                            parent = record
-                            break
-                        else:
-                            raise NotADirectory(cls.PATHSEP.join(walked))
-                else:
-                    raise NoSuchNode(cls.PATHSEP.join(walked))
+                # Bail out if the inode is a file
+                # but is expected to have children.
+                if record.isfile and revpath:
+                    raise NotADirectory(cls.PATHSEP.join(walked))
 
         return parent
 
@@ -167,10 +175,10 @@ class Inode(HISFSModel):
             owner=None, group=None)
 
     @classmethod
-    def fsdict(cls, owner=None, grup=None):
+    def fsdict(cls, owner=None, group=None):
         """Converts the file system to a dictionary"""
         return {'children': [child.todict() for child in cls.by_owner(
-            owner=owner, group=grup)]}
+            owner=owner, group=group)]}
 
     @property
     def name(self):
