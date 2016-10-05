@@ -17,7 +17,7 @@ class FileSystemError(HISMessage):
     """Indicates that the respective file is not available"""
 
     STATUS = 500
-    LOOCALE = {
+    LOCALE = {
         Language.DE_DE: 'Dateisystemfehler.',
         Language.EN_US: 'File system error.'}
 
@@ -26,7 +26,7 @@ class FileNotAvailable(FileSystemError):
     """Indicates that the respective file is not available"""
 
     STATUS = 500
-    LOOCALE = {
+    LOCALE = {
         Language.DE_DE: 'Datei nicht verfügbar.',
         Language.EN_US: 'File not available.'}
 
@@ -35,7 +35,7 @@ class FileNotFound(FileSystemError):
     """Indicates that the respective file is not available"""
 
     STATUS = 404
-    LOOCALE = {
+    LOCALE = {
         Language.DE_DE: 'Datei nicht gefunden.',
         Language.EN_US: 'File not found.'}
 
@@ -44,7 +44,7 @@ class FileExists(FileSystemError):
     """Indicates that the respective file is not available"""
 
     STATUS = 400
-    LOOCALE = {
+    LOCALE = {
         Language.DE_DE: 'Datei existiert bereits.',
         Language.EN_US: 'File already exists.'}
 
