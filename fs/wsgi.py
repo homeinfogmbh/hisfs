@@ -2,11 +2,20 @@
 
 from peewee import DoesNotExist
 
-from his.locale import Language
+from his.api.locale import Language
 from his.api.errors import HISMessage
 from his.api.handlers import AuthorizedService
 
 from .orm import Inode
+
+
+class FileNotAvailable(HISMessage):
+    """Indicates that the respective file is not available"""
+
+    STATUS = 500
+    LOOCALE = {
+        Language.DE_DE: 'Datei nicht verfügbar.',
+        Language.EN_US: 'File not available.'}
 
 
 class FileManager(AuthorizedService):
@@ -33,8 +42,7 @@ class FileManager(AuthorizedService):
                         # TODO: handle
                         pass
                     except FileNotFound:
-                        # TODO: handle
-                        pass
+                        raise FileNotAvailable() from None
             else:
                 try:
                     inode = Inode.by_id(self.account, file_id)
