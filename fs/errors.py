@@ -1,6 +1,7 @@
 """Errors of the FS"""
 
 from his.api.errors import HISMessage
+from his.api.locale import Language
 
 __all__ = [
     'FileSystemError',
@@ -11,7 +12,12 @@ __all__ = [
     'WriteError',
     'DirectoryNotEmpty',
     'NoFileNameSpecified',
-    'FileExists']
+    'InvalidFileName',
+    'NoDataProvided',
+    'FileExists',
+    'FileCreated',
+    'FileUpdated',
+    'FileDeleted']
 
 
 class FileSystemError(HISMessage):
@@ -93,12 +99,30 @@ class DirectoryNotEmpty(FileSystemError):
 
 
 class NoFileNameSpecified(HISMessage):
-    """Indicates that the file already exists"""
+    """Indicates that no file name was provided"""
 
     STATUS = 400
     LOCALE = {
         Language.DE_DE: 'Kein Dateiname angegeben.',
         Language.EN_US: 'No file name specified.'}
+
+
+class InvalidFileName(HISMessage):
+    """Indicates that the given file name is invalid"""
+
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Ungültiger Dateiname.',
+        Language.EN_US: 'Invalid file name.'}
+
+
+class NoDataProvided(HISMessage):
+    """Indicates that no data has been provided"""
+
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Keine Daten übergeben.',
+        Language.EN_US: 'No data provided.'}
 
 
 class FileExists(HISMessage):
@@ -108,3 +132,30 @@ class FileExists(HISMessage):
     LOCALE = {
         Language.DE_DE: 'Datei existiert bereits.',
         Language.EN_US: 'File already exists.'}
+
+
+class FileCreated(HISMessage):
+    """Indicates that the file was successfully created"""
+
+    STATUS = 200
+    LOCALE = {
+        Language.DE_DE: 'Datei gespeichert.',
+        Language.EN_US: 'File created.'}
+
+
+class FileUpdated(HISMessage):
+    """Indicates that the file was successfully updated"""
+
+    STATUS = 200
+    LOCALE = {
+        Language.DE_DE: 'Datei aktualisiert.',
+        Language.EN_US: 'File updated.'}
+
+
+class FileDeleted(HISMessage):
+    """Indicates that the file was successfully deleted"""
+
+    STATUS = 200
+    LOCALE = {
+        Language.DE_DE: 'Datei gelöscht.',
+        Language.EN_US: 'File deleted.'}

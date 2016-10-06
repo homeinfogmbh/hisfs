@@ -5,15 +5,18 @@ from hashlib import sha256
 
 from peewee import DoesNotExist
 
+from homeinfo.crm import Customer
 from homeinfo.lib.mime import mimetype
+from homeinfo.lib.wsgi import OK, JSON
 
-from his.api.locale import Language
+from his.orm import Account
 from his.api.errors import NotAuthorized
 from his.api.handlers import AuthorizedService
 
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
-    WriteError, DirectoryNotEmpty, NoFileNameSpecified, FileExists
+    WriteError, DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, \
+    NoDataProvided, FileExists, FileCreated, FileUpdated, FileDeleted
 from .orm import Inode
 
 
@@ -63,9 +66,11 @@ class FS(AuthorizedService):
             try:
                 owner = self.owner
             except AttributeError:
-                return self.account.customer
+                return self.account
             else:
-                if owner.customer == self.account.customer:
+                if owner is None:
+                    return self.account
+                elif owner.customer == self.account.customer:
                     return owner
                 else:
                     raise NotAuthorized()
@@ -80,13 +85,12 @@ class FS(AuthorizedService):
         else:
             return self.account.customer
 
-
     def get(self):
         """Retrieves (a) file(s)"""
         if self.resource is None:
             return JSON(Inode.fsdict(
                 owner=self.verified_owner,
-                group=self.verified_group)
+                group=self.verified_group))
         else:
             try:
                 inode = Inode.by_path(
@@ -101,12 +105,7 @@ class FS(AuthorizedService):
                 except (NotAFile, ReadError) as e:
                     raise e from None
                 else:
-                    try:
-                        sha256sum = self.query_dict['sha256sum']
-                    except KeyError:
-                        sha256sum = False
-
-                    if sha256sum:
+                    if self.query_dict.get('sha256sum', False):
                         return OK(sha256(data).hexdigest())
                     else:
                         return OK(data, content_type=mimetype(data),
@@ -151,7 +150,7 @@ class FS(AuthorizedService):
                             inode.file = inode.client.add(data)
 
                         inode.save()
-                        return OK()
+                        return FileCreated()
             except NotADirectory as e:
                 raise e from None
             else:
@@ -171,17 +170,14 @@ class FS(AuthorizedService):
                 raise e from None
             else:
                 try:
-                    data = self.file.read()
+                    inode.data = self.file.read()
                 except AttributeError:
                     raise NoDataProvided() from None
+                except (NotAFile, WriteError) as e:
+                    raise e from None
                 else:
-                    try:
-                        inode.data = self.file.read()
-                    except (NotAFile, WriteError) as e:
-                        raise e from None
-                    else:
-                        inode.save()
-                        return OK()
+                    inode.save()
+                    return FileUpdated()
 
     def delete(self):
         """Deletes a file"""
@@ -197,3 +193,5 @@ class FS(AuthorizedService):
                 inode.remove(recursive=self.query_dict.get('recursive', False))
             except DirectoryNotEmpty as e:
                 raise e from None
+            else:
+                return FileDeleted()

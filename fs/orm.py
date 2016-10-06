@@ -1,12 +1,14 @@
 """ORM models"""
 
-from peewee import Model, PrimaryKeyField, ForeignKeyField, IntegerField, \
-    CharField
+from contextlib import suppress
+
+from peewee import DoesNotExist, Model, PrimaryKeyField, ForeignKeyField, \
+    IntegerField, CharField
 
 from homeinfo.crm import Customer
 from homeinfo.peewee import MySQLDatabase
 
-from filedb import FileClient
+from filedb import FileError, FileClient
 
 from his.orm import Account
 
@@ -102,7 +104,7 @@ class Inode(HISFSModel):
             else:
                 # Bail out if the node is a file
                 # but is expected to have children.
-                if record.isfile and revpath:
+                if parent.isfile and revpath:
                     raise NotADirectory(cls.PATHSEP.join(walked))
 
         return parent
@@ -175,7 +177,7 @@ class Inode(HISFSModel):
             raise NotAFile()
         else:
             try:
-                return file_client.get(self.file)
+                return self.client.get(self.file)
             except FileError:
                 raise ReadError()
 
@@ -215,7 +217,7 @@ class Inode(HISFSModel):
     def unlink(self):
         """Deletes a virtual inode"""
         try:
-            first_child = self.__class__.get(self.__class__.parent == self)
+            self.__class__.get(self.__class__.parent == self)
         except DoesNotExist:
             pass
         else:
