@@ -11,23 +11,13 @@ setup(
     author=author,
     author_email=author_email,
     requires=['his'],
-    packages=['fs'],
-    data_files=[
-        ('/etc', ['files/etc/his.conf']),
-        ('/etc/uwsgi/apps-available',
-         ['files/etc/uwsgi/apps-available/his.ini']),
-        ('/usr/share/his',
-         ['files/usr/share/his/his.wsgi'])],
+    package_dir={'his.mods': ''},
+    packages=['his.mods.fs'],
     description='HOMEINFO Integrated Services File System')
 
 
-from his.orm import tables
+from his.mods.fs.orm import Inode
+from his.mods.fs.wsgi import FS
 
-for table in tables:
-    table.create_table(fail_silently=True)
-
-
-from his.mods.meta import install
-
-for handler in install:
-    handler.install()
+Inode.create_table(fail_silently=True)
+FS.install()

@@ -17,7 +17,10 @@ from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
 from .orm import Inode
 
 
-class FileManager(AuthorizedService):
+__all__ = ['FS']
+
+
+class FS(AuthorizedService):
     """Service that manages files"""
 
     @property
