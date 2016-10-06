@@ -1,47 +1,30 @@
 """File management module"""
 
 from os.path import dirname, basename
+from hashlib import sha256
 
 from peewee import DoesNotExist
 
 from homeinfo.lib.mime import mimetype
 
 from his.api.locale import Language
-from his.api.errors import HISMessage
+from his.api.errors import HISMessage, NotAuthorized
 from his.api.handlers import AuthorizedService
 
 from .orm import NotAFile, FileNotFound, Inode
 
 
-class FileSystemError(HISMessage):
-    """Indicates that the respective file is not available"""
+class NoFileNameSpecified(HISMessage):
+    """Indicates that the file already exists"""
 
-    STATUS = 500
+    STATUS = 400
     LOCALE = {
-        Language.DE_DE: 'Dateisystemfehler.',
-        Language.EN_US: 'File system error.'}
+        Language.DE_DE: 'Kein Dateiname angegeben.',
+        Language.EN_US: 'No file name specified.'}
 
 
-class FileNotAvailable(FileSystemError):
-    """Indicates that the respective file is not available"""
-
-    STATUS = 500
-    LOCALE = {
-        Language.DE_DE: 'Datei nicht verfügbar.',
-        Language.EN_US: 'File not available.'}
-
-
-class FileNotFound(FileSystemError):
-    """Indicates that the respective file is not available"""
-
-    STATUS = 404
-    LOCALE = {
-        Language.DE_DE: 'Datei nicht gefunden.',
-        Language.EN_US: 'File not found.'}
-
-
-class FileExists(FileSystemError):
-    """Indicates that the respective file is not available"""
+class FileExists(HISMessage):
+    """Indicates that the file already exists"""
 
     STATUS = 400
     LOCALE = {
@@ -78,67 +61,81 @@ class FileManager(AuthorizedService):
             except DoesNotExist:
                 return None
 
+    @property
+    def verified_owner(self):
+        """Gets the verified owner"""
+        if self.account.root:
+            return self.owner or self.account
+        elif self.account.admin:
+            try:
+                owner = self.owner
+            except AttributeError:
+                return self.account.customer
+            else:
+                if owner.customer == self.account.customer:
+                    return owner
+                else:
+                    raise NotAuthorized()
+        else:
+            return self.account
+
+    @property
+    def verified_group(self):
+        """Gets the verified group"""
+        if self.account.root:
+            return self.group or self.account.customer
+        else:
+            return self.account.customer
+
+
     def get(self):
         """Retrieves (a) file(s)"""
         if self.resource is None:
-            if self.account.root:
-                return JSON(Inode.fsdict(owner=self.owner, group=self.group))
-            elif self.account.admin:
-                owner = self.owner
-
-                if owner is not None:
-                    if owner.customer != self.account.customer:
-                        raise IsufficientPermissions()
-
-                return JSON(Inode.fsdict(
-                    owner=owner,
-                    group=self.account.customer))
-            else:
-                return JSON(Inode.fsdict(
-                    owner=self.account,
-                    group=self.account.customer))
+            return JSON(Inode.fsdict(
+                owner=self.verified_owner,
+                group=self.verified_group)
         else:
-            if self.account.root:
-                try:
-                    inode = Inode.by_path(self.resource)
-                except (NoSuchNode, NotADirectory) as e:
-                    raise FileNotFound(e.path) from None
-            elif self.account.admin:
-                try:
-                    inode = Inode.by_path(
-                        self.resource,
-                        group=self.account.customer)
-                except (NoSuchNode, NotADirectory) as e:
-                    raise FileNotFound(e.path) from None
-            else:
-                try:
-                    inode = Inode.by_path(self.resource, owner=self.account)
-                except (NoSuchNode, NotADirectory) as e:
-                    raise FileNotFound(e.path) from None
-
             try:
-                data = inode.data
-            except NotAFile:
-                return JSON(inode.todict())
-            except FileNotFound:
-                raise FileNotAvailable() from None
+                inode = Inode.by_path(
+                    self.resource,
+                    owner=self.verified_owner,
+                    group=self.verified_group)
+            except (NoSuchNode, NotADirectory) as e:
+                raise e from None
             else:
-                return OK(data, content_type=mimetype(data), charset=None)
+                try:
+                    data = inode.data
+                except (NotAFile, FileNotFound) as e:
+                    raise e from None
+                else:
+                    try:
+                        sha256sum = self.query_dict['sha256sum']
+                    except KeyError:
+                        sha256sum = False
+
+                    if sha256sum:
+                        return OK(sha256(data).hexdigest())
+                    else:
+                        return OK(data, content_type=mimetype(data),
+                                  charset=None)
 
     def post(self):
         """Adds new files"""
         if self.resource is None:
             raise NoFileNameSpecified()
         else:
+            owner = self.verified_owner
+            group = self.verified_group
+
             try:
-                Inode.by_path(self.resource, account=self.account)
-            except (NoSuchNode, NotADirectory):
+                Inode.by_path(self.resource, owner=owner, group=group)
+            except NoSuchNode:
                 try:
                     parent = Inode.by_path(
                         dirname(self.resource),
-                        account=self.account)
-                except (NoSuchNode, NotADirectory)as e:
-                    raise FileNotFound(e.path) from None
+                        owner=owner, group=group)
+                except (NoSuchNode, NotADirectory) as e:
+                    raise e from None
                 else:
                     inode = Inode()
 
@@ -147,27 +144,63 @@ class FileManager(AuthorizedService):
                     except ValueError:
                         raise InvalidFileName()
                     else:
-                        inode.owner = self.account
-                        inode.group = self.account.customer
+                        inode.owner = owner
+                        inode.group = group
                         inode.parent = parent
 
                         try:
                             data = self.file.read()
                         except AttributeError:
+                            # Directory
                             inode.file = None
                         else:
+                            # File
                             inode.file = inode.client.add(data)
 
                         inode.save()
+                        return OK()
+            except NotADirectory as e:
+                raise e from None
             else:
                 raise FileExists() from None
 
     def put(self):
-        """Updates an existing file"""
-        # TODO: implement
-        pass
+        """Overrides an existing file"""
+        if self.resource is None:
+            raise NoFileNameSpecified()
+        else:
+            owner = self.verified_owner
+            group = self.verified_group
+
+            try:
+                inode = Inode.by_path(self.resource, owner=owner, group=group)
+            except (NoSuchNode, NotADirectory) as e:
+                raise e from None
+            else:
+                try:
+                    data = self.file.read()
+                except AttributeError:
+                    raise NoDataProvided() from None
+                else:
+                    try:
+                        inode.data = self.file.read()
+                    except (NotAFile, WriteError) as e:
+                        raise e from None
+                    else:
+                        inode.save()
+                        return OK()
 
     def delete(self):
         """Deletes a file"""
-        # TODO: implement
-        pass
+        try:
+            inode = Inode.by_path(
+                self.resource,
+                owner=self.verified_owner,
+                group=self.verified_group)
+        except (NoSuchNode, NotADirectory) as e:
+            raise e from None
+        else:
+            try:
+                inode.remove(recursive=self.query_dict.get('recursive', False))
+            except DirectoryNotEmpty as e:
+                raise e from None

@@ -8,6 +8,7 @@ from homeinfo.peewee import MySQLDatabase
 
 from filedb import FileClient
 
+from his.api.errors import HISMessage
 from his.orm import Account
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
@@ -24,7 +25,7 @@ __all__ = [
     'Inode']
 
 
-class FileSystemError(Exception):
+class FileSystemError(HISMessage):
     """Indicates errors within the file system"""
 
     pass
@@ -35,9 +36,14 @@ class NotADirectory(FileSystemError):
     directory but was expected to be one
     """
 
-    def __init__(self, path):
-        super().__init__(path)
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Ist kein Ordner.',
+        Language.EN_US: 'Not a directory.'}
+
+    def __init__(self, path, *args, **kwargs):
         self.path = path
+        super().__init__(*args, **kwargs)
 
 
 class NotAFile(FileSystemError):
@@ -45,27 +51,45 @@ class NotAFile(FileSystemError):
     file but was expected to be one
     """
 
-    pass
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Ist keine Datei.',
+        Language.EN_US: 'Not a file.'}
+
+    def __init__(self, path, *args, **kwargs):
+        self.path = path
+        super().__init__(*args, **kwargs)
 
 
 class NoSuchNode(FileSystemError):
     """Indicates that the respective path node does not exists"""
 
-    def __init__(self, path):
-        super().__init__(path)
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Knoten nicht vorhanden.',
+        Language.EN_US: 'Not such node.'}
+
+    def __init__(self, path, *args, **kwargs):
         self.path = path
+        super().__init__(*args, **kwargs)
 
 
 class ReadError(FileSystemError):
     """Indicates that no data could be read from filedb"""
 
-    pass
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Lesefehler.',
+        Language.EN_US: 'Read error.'}
 
 
 class WriteError(FileSystemError):
     """Indicates that no data could be written to filedb"""
 
-    pass
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Schreibfehler.',
+        Language.EN_US: 'Write error.'}
 
 
 class DirectoryNotEmpty(FileSystemError):
@@ -73,7 +97,10 @@ class DirectoryNotEmpty(FileSystemError):
     not be deleted because it is not empty
     """
 
-    pass
+    STATUS = 400
+    LOCALE = {
+        Language.DE_DE: 'Ordner ist nicht leer.',
+        Language.EN_US: 'Directory is not empty.'}
 
 
 class HISFSModel(Model):
@@ -160,7 +187,7 @@ class Inode(HISFSModel):
             except DoesNotExist:
                 raise NoSuchNode(cls.PATHSEP.join(walked))
             else:
-                # Bail out if the inode is a file
+                # Bail out if the node is a file
                 # but is expected to have children.
                 if record.isfile and revpath:
                     raise NotADirectory(cls.PATHSEP.join(walked))
