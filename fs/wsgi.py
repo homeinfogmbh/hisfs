@@ -8,28 +8,13 @@ from peewee import DoesNotExist
 from homeinfo.lib.mime import mimetype
 
 from his.api.locale import Language
-from his.api.errors import HISMessage, NotAuthorized
+from his.api.errors import NotAuthorized
 from his.api.handlers import AuthorizedService
 
-from .orm import NotAFile, FileNotFound, Inode
 
-
-class NoFileNameSpecified(HISMessage):
-    """Indicates that the file already exists"""
-
-    STATUS = 400
-    LOCALE = {
-        Language.DE_DE: 'Kein Dateiname angegeben.',
-        Language.EN_US: 'No file name specified.'}
-
-
-class FileExists(HISMessage):
-    """Indicates that the file already exists"""
-
-    STATUS = 400
-    LOCALE = {
-        Language.DE_DE: 'Datei existiert bereits.',
-        Language.EN_US: 'File already exists.'}
+from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
+    WriteError, DirectoryNotEmpty, NoFileNameSpecified, FileExists
+from .orm import Inode
 
 
 class FileManager(AuthorizedService):
@@ -105,7 +90,7 @@ class FileManager(AuthorizedService):
             else:
                 try:
                     data = inode.data
-                except (NotAFile, FileNotFound) as e:
+                except (NotAFile, ReadError) as e:
                     raise e from None
                 else:
                     try:
