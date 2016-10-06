@@ -23,6 +23,11 @@ __all__ = ['FS']
 class FS(AuthorizedService):
     """Service that manages files"""
 
+    NODE = 'fs'
+    NAME = 'FileSystem'
+    DESCRIPTION = 'Dateisystem'
+    PROMOTE = False
+
     @property
     def owner(self):
         """Optional owner argument for root and admins"""
