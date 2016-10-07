@@ -25,7 +25,7 @@ class HISFSModel(Model):
         database = MySQLDatabase(
             'his_fs',
             host='localhost',
-            user='crm',
+            user='his',
             passwd='Z"XO;$2K+>XEo}jK>6-+}|U@,|E/6_&W',
             closing=True)
         schema = database.database
