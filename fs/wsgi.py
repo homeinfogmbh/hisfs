@@ -78,11 +78,10 @@ class FS(AuthorizedService):
                         inode.owner = self.account
                         inode.group = self.customer
                         inode.parent = parent
-                        data = self.data
 
-                        if data:
+                        if self.data:
                             # File
-                            inode.file = inode.client.add(data)
+                            inode.file = inode.client.add(self.data)
                         else:
                             # Directory
                             inode.file = None
@@ -110,11 +109,9 @@ class FS(AuthorizedService):
                 try:
                     name = self.query_dict['name']
                 except KeyError:
-                    data = self.data
-
-                    if data:
+                    if self.data:
                         try:
-                            inode.data = data
+                            inode.data = self.data
                         except (NotAFile, WriteError) as e:
                             raise e from None
                         else:
