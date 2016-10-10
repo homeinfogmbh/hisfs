@@ -3,16 +3,10 @@
 from os.path import dirname, basename
 from hashlib import sha256
 
-from peewee import DoesNotExist
-
-from homeinfo.crm import Customer
 from homeinfo.lib.mime import mimetype
 from homeinfo.lib.wsgi import OK, JSON
 
-from his.orm import Account
-from his.api.errors import NotAuthorized
 from his.api.handlers import AuthorizedService
-
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, \
@@ -31,72 +25,16 @@ class FS(AuthorizedService):
     DESCRIPTION = 'Dateisystem'
     PROMOTE = False
 
-    @property
-    def owner(self):
-        """Optional owner argument for root and admins"""
-        try:
-            owner = self.query_dict['owner']
-        except KeyError:
-            return None
-        else:
-            try:
-                return Account.find(owner)
-            except DoesNotExist:
-                return None
-
-    @property
-    def group(self):
-        """Optional group argument for root"""
-        try:
-            group = self.query_dict['group']
-        except KeyError:
-            return None
-        else:
-            try:
-                return Customer.find(group)
-            except DoesNotExist:
-                return None
-
-    @property
-    def verified_owner(self):
-        """Gets the verified owner"""
-        if self.account.root:
-            return self.owner or self.account
-        elif self.account.admin:
-            try:
-                owner = self.owner
-            except AttributeError:
-                return self.account
-            else:
-                if owner is None:
-                    return self.account
-                elif owner.customer == self.account.customer:
-                    return owner
-                else:
-                    raise NotAuthorized()
-        else:
-            return self.account
-
-    @property
-    def verified_group(self):
-        """Gets the verified group"""
-        if self.account.root:
-            return self.group or self.account.customer
-        else:
-            return self.account.customer
-
     def get(self):
         """Retrieves (a) file(s)"""
         if self.resource is None:
-            return JSON(Inode.fsdict(
-                owner=self.verified_owner,
-                group=self.verified_group))
+            return JSON(Inode.fsdict(owner=self.account, group=self.customer))
         else:
             try:
                 inode = Inode.by_path(
                     self.resource,
-                    owner=self.verified_owner,
-                    group=self.verified_group)
+                    owner=self.account,
+                    group=self.customer)
             except (NoSuchNode, NotADirectory) as e:
                 raise e from None
             else:
@@ -116,16 +54,17 @@ class FS(AuthorizedService):
         if self.resource is None:
             raise NoFileNameSpecified()
         else:
-            owner = self.verified_owner
-            group = self.verified_group
-
             try:
-                Inode.by_path(self.resource, owner=owner, group=group)
+                Inode.by_path(
+                    self.resource,
+                    owner=self.account,
+                    group=self.customer)
             except NoSuchNode:
                 try:
                     parent = Inode.by_path(
                         dirname(self.resource),
-                        owner=owner, group=group)
+                        owner=self.account,
+                        group=self.customer)
                 except (NoSuchNode, NotADirectory) as e:
                     raise e from None
                 else:
@@ -136,18 +75,17 @@ class FS(AuthorizedService):
                     except ValueError:
                         raise InvalidFileName()
                     else:
-                        inode.owner = owner
-                        inode.group = group
+                        inode.owner = self.account
+                        inode.group = self.customer
                         inode.parent = parent
+                        data = self.data
 
-                        try:
-                            data = self.file.read()
-                        except AttributeError:
-                            # Directory
-                            inode.file = None
-                        else:
+                        if data:
                             # File
                             inode.file = inode.client.add(data)
+                        else:
+                            # Directory
+                            inode.file = None
 
                         inode.save()
                         return FileCreated()
@@ -161,21 +99,31 @@ class FS(AuthorizedService):
         if self.resource is None:
             raise NoFileNameSpecified()
         else:
-            owner = self.verified_owner
-            group = self.verified_group
-
             try:
-                inode = Inode.by_path(self.resource, owner=owner, group=group)
+                inode = Inode.by_path(
+                    self.resource,
+                    owner=self.account,
+                    group=self.customer)
             except (NoSuchNode, NotADirectory) as e:
                 raise e from None
             else:
                 try:
-                    inode.data = self.file.read()
-                except AttributeError:
-                    raise NoDataProvided() from None
-                except (NotAFile, WriteError) as e:
-                    raise e from None
+                    name = self.query_dict['name']
+                except KeyError:
+                    data = self.data
+
+                    if data:
+                        try:
+                            inode.data = data
+                        except (NotAFile, WriteError) as e:
+                            raise e from None
+                        else:
+                            inode.save()
+                            return FileUpdated()
+                    else:
+                        raise NoDataProvided()
                 else:
+                    inode.name = name
                     inode.save()
                     return FileUpdated()
 
@@ -184,8 +132,8 @@ class FS(AuthorizedService):
         try:
             inode = Inode.by_path(
                 self.resource,
-                owner=self.verified_owner,
-                group=self.verified_group)
+                owner=self.account,
+                group=self.customer)
         except (NoSuchNode, NotADirectory) as e:
             raise e from None
         else:
