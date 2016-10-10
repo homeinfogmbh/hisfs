@@ -40,7 +40,7 @@ class FS(AuthorizedService):
                 raise e from None
             else:
                 if inode.sha256sum == self.environ.get('HTTP_IF_NONE_MATCH'):
-                        return FileUnchanged()
+                    return FileUnchanged()
                 else:
                     try:
                         data = inode.data
