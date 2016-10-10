@@ -9,7 +9,6 @@ from homeinfo.crm import Customer
 from homeinfo.peewee import MySQLDatabase
 
 from filedb import FileError, FileClient
-from filedb.orm import File
 
 from his.orm import Account
 
@@ -205,8 +204,8 @@ class Inode(HISFSModel):
             raise NotAFile()
         else:
             try:
-                return File.get(File.id == self.file).sha256sum
-            except DoesNotExist:
+                self.client.sha256sum(self.file)
+            except FileError:
                 raise ReadError() from None
 
     @property
