@@ -10,7 +10,8 @@ from his.api.handlers import AuthorizedService
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, \
-    NoDataProvided, FileExists, FileCreated, FileUpdated, FileDeleted
+    NoDataProvided, FileExists, FileCreated, FileUpdated, FileDeleted, \
+    FileUnchanged
 from .orm import Inode
 
 
@@ -38,16 +39,19 @@ class FS(AuthorizedService):
             except (NoSuchNode, NotADirectory) as e:
                 raise e from None
             else:
-                try:
-                    data = inode.data
-                except (NotAFile, ReadError) as e:
-                    raise e from None
+                if inode.sha256sum == self.environ.get('HTTP_IF_NONE_MATCH'):
+                        return FileUnchanged()
                 else:
-                    if self.query_dict.get('sha256sum', False):
-                        return OK(sha256(data).hexdigest())
+                    try:
+                        data = inode.data
+                    except (NotAFile, ReadError) as e:
+                        raise e from None
                     else:
-                        return OK(data, content_type=mimetype(data),
-                                  charset=None)
+                        if self.query_dict.get('sha256sum', False):
+                            return OK(sha256(data).hexdigest())
+                        else:
+                            return OK(data, content_type=mimetype(data),
+                                      charset=None)
 
     def post(self):
         """Adds new files"""

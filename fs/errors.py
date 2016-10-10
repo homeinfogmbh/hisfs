@@ -17,7 +17,8 @@ __all__ = [
     'FileExists',
     'FileCreated',
     'FileUpdated',
-    'FileDeleted']
+    'FileDeleted',
+    'FileUnchanged']
 
 
 class FileSystemError(HISMessage):
@@ -31,7 +32,7 @@ class NotADirectory(FileSystemError):
     directory but was expected to be one
     """
 
-    STATUS = 400
+    STATUS = 406
     LOCALE = {
         Language.DE_DE: 'Ist kein Ordner.',
         Language.EN_US: 'Not a directory.'}
@@ -46,7 +47,7 @@ class NotAFile(FileSystemError):
     file but was expected to be one
     """
 
-    STATUS = 400
+    STATUS = 406
     LOCALE = {
         Language.DE_DE: 'Ist keine Datei.',
         Language.EN_US: 'Not a file.'}
@@ -59,7 +60,7 @@ class NotAFile(FileSystemError):
 class NoSuchNode(FileSystemError):
     """Indicates that the respective path node does not exists"""
 
-    STATUS = 400
+    STATUS = 404
     LOCALE = {
         Language.DE_DE: 'Knoten nicht vorhanden.',
         Language.EN_US: 'Not such node.'}
@@ -72,7 +73,7 @@ class NoSuchNode(FileSystemError):
 class ReadError(FileSystemError):
     """Indicates that no data could be read from filedb"""
 
-    STATUS = 400
+    STATUS = 500
     LOCALE = {
         Language.DE_DE: 'Lesefehler.',
         Language.EN_US: 'Read error.'}
@@ -81,7 +82,7 @@ class ReadError(FileSystemError):
 class WriteError(FileSystemError):
     """Indicates that no data could be written to filedb"""
 
-    STATUS = 400
+    STATUS = 500
     LOCALE = {
         Language.DE_DE: 'Schreibfehler.',
         Language.EN_US: 'Write error.'}
@@ -159,3 +160,12 @@ class FileDeleted(HISMessage):
     LOCALE = {
         Language.DE_DE: 'Datei gelöscht.',
         Language.EN_US: 'File deleted.'}
+
+
+class FileUnchanged(HISMessage):
+    """Indicates that the file was not changed"""
+
+    STATUS = 200
+    LOCALE = {
+        Language.DE_DE: 'Datei unverändert.',
+        Language.EN_US: 'File unchanged.'}

@@ -9,6 +9,7 @@ from homeinfo.crm import Customer
 from homeinfo.peewee import MySQLDatabase
 
 from filedb import FileError, FileClient
+from filedb.orm import File
 
 from his.orm import Account
 
@@ -196,6 +197,17 @@ class Inode(HISFSModel):
                     self.client.delete(self.file)
 
                 self.file = file_id
+
+    @property
+    def sha256sum(self):
+        """Returns the expected SHA-256 checksum"""
+        if self.file is None:
+            raise NotAFile()
+        else:
+            try:
+                return File.get(File.id == self.file).sha256sum
+            except DoesNotExist:
+                raise ReadError() from None
 
     @property
     def children(self):
