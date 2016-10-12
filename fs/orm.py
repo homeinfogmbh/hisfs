@@ -2,15 +2,13 @@
 
 from contextlib import suppress
 
-from peewee import DoesNotExist, Model, PrimaryKeyField, ForeignKeyField, \
-    IntegerField, CharField
+from peewee import DoesNotExist, ForeignKeyField, IntegerField, CharField
 
 from homeinfo.crm import Customer
-from homeinfo.peewee import MySQLDatabase
 
 from filedb import FileError, FileClient
 
-from his.orm import Account
+from his.orm import service_table, HISModel, Account
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty
@@ -18,22 +16,8 @@ from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
 __all__ = ['Inode']
 
 
-class HISFSModel(Model):
-    """Common HIS fs model"""
-
-    class Meta:
-        database = MySQLDatabase(
-            'his_fs',
-            host='localhost',
-            user='his_fs',
-            passwd='knEOq6kTHatgcZQd',
-            closing=True)
-        schema = database.database
-
-    id = PrimaryKeyField()
-
-
-class Inode(HISFSModel):
+@service_table
+class Inode(HISModel):
     """Inode database model for the virtual filesystem"""
 
     PATHSEP = '/'
