@@ -47,7 +47,7 @@ class FS(AuthorizedService):
                     except (NotAFile, ReadError) as e:
                         raise e from None
                     else:
-                        if self.params.get('sha256sum', False):
+                        if self.query.get('sha256sum', False):
                             return OK(sha256(data).hexdigest())
                         else:
                             return OK(data, content_type=mimetype(data),
@@ -111,7 +111,7 @@ class FS(AuthorizedService):
                 raise e from None
             else:
                 try:
-                    name = self.params['name']
+                    name = self.query['name']
                 except KeyError:
                     if self.data:
                         try:
@@ -139,7 +139,7 @@ class FS(AuthorizedService):
             raise e from None
         else:
             try:
-                inode.remove(recursive=self.params.get('recursive', False))
+                inode.remove(recursive=self.query.get('recursive', False))
             except DirectoryNotEmpty as e:
                 raise e from None
             else:
