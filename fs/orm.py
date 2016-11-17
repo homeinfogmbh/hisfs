@@ -8,25 +8,26 @@ from homeinfo.crm import Customer
 
 from filedb import FileError, FileClient
 
-from his.orm import service_table, HISModel, Account
+from his.orm import module_model, HISModel, Account
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty
 
-__all__ = ['Inode']
+__all__ = ['Directory', 'File']
 
 
-@service_table
-class Inode(HISModel):
+class Inode(module_model('fs')):
     """Inode database model for the virtual filesystem"""
 
     PATHSEP = '/'
+    FILE_CLIENT = FileClient('7958faef-01c9-4c3b-b4ef-1aecea6945c1')
 
     _name = CharField(255, db_column='name')
     owner = ForeignKeyField(Account, db_column='owner')
     group = ForeignKeyField(Customer, db_column='group')
     parent = ForeignKeyField(
-        'self', db_column='parent', null=True, default=None)
+        'self', db_column='parent',
+        null=True, default=None)
     file = IntegerField(null=True, default=None)
 
     @classmethod
@@ -47,7 +48,7 @@ class Inode(HISModel):
 
     @classmethod
     def getrel(cls, name, parent, owner, group):
-        """Get  inode by relative properties.
+        """Get inode by relative properties.
 
         XXX: Only <parent> may be None for root nodes.
         """
@@ -103,7 +104,7 @@ class Inode(HISModel):
     @classmethod
     def fsdict(cls, owner=None, group=None):
         """Converts the file system to a dictionary"""
-        return {'children': [child.todict() for child in cls.by_owner(
+        return {'children': [child.to_dict() for child in cls.by_owner(
             owner=owner, group=group)]}
 
     @property
@@ -150,18 +151,13 @@ class Inode(HISModel):
         return not self.isdir
 
     @property
-    def client(self):
-        """Returns the filedb client"""
-        return FileClient('7958faef-01c9-4c3b-b4ef-1aecea6945c1')
-
-    @property
     def data(self):
         """Returns the file's content"""
         if self.file is None:
             raise NotAFile()
         else:
             try:
-                return self.client.get(self.file)
+                return self.FILE_CLIENT.get(self.file)
             except FileError:
                 raise ReadError()
 
@@ -172,12 +168,12 @@ class Inode(HISModel):
             raise NotAFile()
         else:
             try:
-                file_id = self.client.add(data)
+                file_id = self.FILE_CLIENT.add(data)
             except FileError:
                 raise WriteError()
             else:
                 with suppress(FileError):
-                    self.client.delete(self.file)
+                    self.FILE_CLIENT.delete(self.file)
 
                 self.file = file_id
 
@@ -188,7 +184,7 @@ class Inode(HISModel):
             raise NotAFile()
         else:
             try:
-                self.client.sha256sum(self.file)
+                self.FILE_CLIENT.sha256sum(self.file)
             except FileError:
                 raise ReadError() from None
 
@@ -220,18 +216,18 @@ class Inode(HISModel):
 
         if self.file is not None:
             with suppress(FileError):
-                self.client.delete(self.file)
+                self.FILE_CLIENT.delete(self.file)
 
         self.delete_instance()
 
-    def todict(self):
+    def to_dict(self):
         """Converts the inode into a dictionary"""
         result = {'name': self.name}
 
         if self.isfile:
             with suppress(FileError):
-                result['sha256sum'] = self.client.sha256sum(self.file)
+                result['sha256sum'] = self.FILE_CLIENT.sha256sum(self.file)
         else:
-            result['children'] = [child.todict() for child in self.children]
+            result['children'] = [child.to_dict() for child in self.children]
 
         return result
