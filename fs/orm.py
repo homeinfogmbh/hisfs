@@ -8,12 +8,12 @@ from homeinfo.crm import Customer
 
 from filedb import FileError, FileClient
 
-from his.orm import module_model, HISModel, Account
+from his.orm import module_model, Account
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty
 
-__all__ = ['Directory', 'File']
+__all__ = ['Inode']
 
 
 class Inode(module_model('fs')):
