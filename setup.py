@@ -14,10 +14,3 @@ setup(
     package_dir={'his.mods': ''},
     packages=['his.mods.fs'],
     description='HOMEINFO Integrated Services File System')
-
-
-from his.mods.fs.orm import Inode
-from his.mods.fs.wsgi import FS
-
-Inode.create_table(fail_silently=True)
-FS.install()
