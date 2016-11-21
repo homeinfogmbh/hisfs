@@ -4,6 +4,7 @@ from contextlib import suppress
 
 from peewee import DoesNotExist, ForeignKeyField, IntegerField, CharField
 
+from homeinfo.crm import Customer
 from homeinfo.lib.fs import FileMode
 from filedb import FileError, FileClient
 
@@ -14,66 +15,85 @@ from his.fs.errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
 __all__ = ['Inode']
 
 
+def root(inodes):
+    """Yields inodes that are root directories"""
+
+    for inode in inodes:
+        if inode.isdir and inode.root:
+            yield inode
+
+
 class Inode(module_model('fs')):
     """Inode database model for the virtual filesystem"""
 
     PATHSEP = '/'
     FILE_CLIENT = FileClient('7958faef-01c9-4c3b-b4ef-1aecea6945c1')
 
+    parent = ForeignKeyField('self', db_column='parent', null=True)
     _name = CharField(255, db_column='name')
     owner = ForeignKeyField(Account, db_column='owner')
-    parent = ForeignKeyField(
-        'self', db_column='parent',
-        null=True, default=None)
-    file = IntegerField(null=True, default=None)
+    group = ForeignKeyField(Customer, db_column='group')
     _mode = IntegerField(db_column='mode')  # SMALLINT field!
+    file = IntegerField(null=True, default=None)
 
     @classmethod
-    def for_account(cls, account):
-        """Returns fs nodes visible to the account"""
-        # TODO: implement
-        pass
+    def by_owner(cls, owner):
+        """Yields inodes of the respective owner"""
+        return cls.select().where(cls.owner == owner)
 
     @classmethod
-    def by_owner(cls, owner=None, group=None):
-        """Yields elements of the respective root folder"""
-        if owner is None and group is None:
-            yield from cls
-        elif owner is not None:
-            for inode in cls.select().where(cls.owner == owner):
-                if group is not None:
-                    if inode.owner.customer == group:
-                        yield inode
-                else:
-                    yield inode
-        else:
-            for inode in cls:
-                if inode.owner.customer == group:
-                    yield inode
+    def by_group(cls, group):
+        """Yieds inodes of the respective group"""
+        return cls.select().where(cls.group == group)
 
     @classmethod
-    def getrel(cls, name, parent, owner):
-        """Get inode by relative properties.
-
-        XXX: Only <parent> may be None for root nodes.
+    def by_ownership(cls, owner, group):
+        """Yields inodes that are owned by
+        the respective owner and group
         """
+        for inode in cls.by_owner:
+            if inode.group == group:
+                yield inode
+
+    @classmethod
+    def getrel(cls, name, parent, owner, group):
+        """Get inode by relative properties."""
         if parent is None:
             return cls.get(
                 (cls._name == name) &
                 (cls.parent >> None) &
-                (cls.owner == owner))
+                (cls.owner == owner) &
+                (cls.group == group))
         else:
             return cls.get(
                 (cls._name == name) &
                 (cls.parent == parent) &
-                (cls.owner == owner))
+                (cls.owner == owner) &
+                (cls.group == group))
 
     @classmethod
-    def root(cls, owner=None, group=None):
+    def root_for(cls, owner=None, group=None):
         """Yields elements of the respective root folder"""
-        for record in cls.by_owner(owner=owner, group=group):
-            if record.parent is None:
-                yield record
+        if owner is None and group is None:
+            return cls.select().where(
+                (cls.file >> None) &
+                (cls.parent >> None))
+        elif owner is not None and group is None:
+            return cls.select().where(
+                (cls.file >> None) &
+                (cls.parent >> None) &
+                (cls.owner == owner))
+        elif owner is None and group is not None:
+            return cls.select().where(
+                (cls.file >> None) &
+                (cls.parent >> None) &
+                (cls.group == group))
+        else:
+            return cls.select().where(
+                (cls.file >> None) &
+                (cls.parent >> None) &
+                (cls.owner == owner) &
+                (cls.group == group))
 
     @classmethod
     def by_revpath(cls, revpath, owner=None, group=None):
@@ -86,7 +106,7 @@ class Inode(module_model('fs')):
             walked.append(node)
 
             try:
-                parent = cls.getrel(node, parent, owner=owner, group=group)
+                parent = cls.getrel(node, parent, owner, group)
             except DoesNotExist:
                 raise NoSuchNode(cls.PATHSEP.join(walked))
             else:
@@ -103,12 +123,6 @@ class Inode(module_model('fs')):
         return cls.by_revpath(
             list(reversed(path.split(cls.PATHSEP))),
             owner=owner, group=group)
-
-    @classmethod
-    def fsdict(cls, owner=None, group=None):
-        """Converts the file system to a dictionary"""
-        return {'children': [child.to_dict() for child in cls.by_owner(
-            owner=owner, group=group)]}
 
     @property
     def name(self):
@@ -127,6 +141,16 @@ class Inode(module_model('fs')):
             self._name = name
 
     @property
+    def mode(self):
+        """Returns the file mode"""
+        return FileMode(self._mode)
+
+    @mode.setter
+    def mode(self, mode):
+        """Sets the file mode"""
+        self._mode = int(mode)
+
+    @property
     def revpath(self):
         """Returns the reversed path nodes towards the inode"""
         yield self.name
@@ -142,6 +166,11 @@ class Inode(module_model('fs')):
     def path(self):
         """Returns the path to the inode"""
         return self.PATHSEP.join(reversed(self.revpath))
+
+    @property
+    def root(self):
+        """Determines whether the inode is on the root level"""
+        return self.parent is None
 
     @property
     def isdir(self):
@@ -199,16 +228,6 @@ class Inode(module_model('fs')):
         else:
             raise NotADirectory()
 
-    @property
-    def mode(self):
-        """Returns the file mode"""
-        return FileMode(self._mode)
-
-    @mode.setter
-    def mode(self, mode):
-        """Sets the file mode"""
-        self._mode = int(mode)
-
     def remove(self, recursive=False):
         """Removes a virtual inode"""
         if recursive:
@@ -233,26 +252,16 @@ class Inode(module_model('fs')):
 
         self.delete_instance()
 
-    def to_dict(self, recursive=False, hash=False):
+    def to_dict(self):
         """Converts the inode into a dictionary"""
-        result = {'name': self.name}
+        result = {
+            'name': self.name,
+            'owner': self.owner.name,
+            'group': self.group.name,
+            'mode': str(self.mode)}
 
         if self.isdir:
-            if recursive:
-                result['children'] = [
-                    child.to_dict(recursive=True, hash=hash) for
-                    child in self.children]
-            elif recursive is not None:
-                # If recursive is false but not None, add only the  children
-                # of the directory withour further recursion (default).
-                result['children'] = [
-                    child.to_dict(recursive=None, hash=hash) for
-                    child in self.children]
-        elif hash:
-            try:
-                result['sha256sum'] = self.FILE_CLIENT.sha256sum(self.file)
-            except FileError:
-                result['tainted'] = True
+            result['children'] = [child.to_dict() for child in self.children]
 
         return result
 

@@ -1,17 +1,15 @@
 """File management module"""
 
 from os.path import dirname, basename
-from hashlib import sha256
+from contextlib import suppress
 
-from homeinfo.lib.mime import mimetype
-from homeinfo.lib.wsgi import OK, JSON
+from homeinfo.lib.wsgi import OK, JSON, Binary
 
 from his.api.handlers import AuthorizedService
 
-from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
-    WriteError, DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, \
-    NoDataProvided, FileExists, FileCreated, FileUpdated, FileDeleted, \
-    FileUnchanged
+from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
+    DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
+    FileExists, FileCreated, FileUpdated, FileDeleted, FileUnchanged
 from .orm import Inode
 
 
@@ -39,19 +37,16 @@ class FS(AuthorizedService):
             except (NoSuchNode, NotADirectory) as e:
                 raise e from None
             else:
-                if inode.sha256sum == self.environ.get('HTTP_IF_NONE_MATCH'):
-                    return FileUnchanged()
+                with suppress(KeyError):
+                    # Access environ first to provoke KeyError
+                    # before SHA-256 sum is derived.
+                    if self.environ['HTTP_IF_NONE_MATCH'] == inode.sha256sum:
+                        return FileUnchanged()
+
+                if self.query.get('sha256sum', False):
+                    return OK(inode.sha256sum)
                 else:
-                    try:
-                        data = inode.data
-                    except (NotAFile, ReadError) as e:
-                        raise e from None
-                    else:
-                        if self.query.get('sha256sum', False):
-                            return OK(sha256(data).hexdigest())
-                        else:
-                            return OK(data, content_type=mimetype(data),
-                                      charset=None)
+                    return Binary(inode.data)
 
     def post(self):
         """Adds new files"""
