@@ -129,7 +129,7 @@ class NoDataProvided(HISMessage):
 class FileExists(HISMessage):
     """Indicates that the file already exists"""
 
-    STATUS = 400
+    STATUS = 409
     LOCALE = {
         Language.DE_DE: 'Datei existiert bereits.',
         Language.EN_US: 'File already exists.'}
@@ -138,7 +138,7 @@ class FileExists(HISMessage):
 class FileCreated(HISMessage):
     """Indicates that the file was successfully created"""
 
-    STATUS = 200
+    STATUS = 201
     LOCALE = {
         Language.DE_DE: 'Datei gespeichert.',
         Language.EN_US: 'File created.'}
