@@ -9,7 +9,7 @@ from homeinfo.lib.fs import FileMode
 from filedb import FileError, FileClient
 
 from his.orm import module_model, Account
-from his.fs.errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
+from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty
 
 __all__ = ['Inode']
