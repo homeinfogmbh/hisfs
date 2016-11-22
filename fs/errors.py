@@ -19,7 +19,6 @@ __all__ = [
     'FileUpdated',
     'FileDeleted',
     'FileUnchanged',
-    'NotAccessible',
     'NotExecutable',
     'NotWritable',
     'NotReadable']
@@ -173,15 +172,6 @@ class FileUnchanged(HISMessage):
     LOCALE = {
         Language.DE_DE: 'Datei unverändert.',
         Language.EN_US: 'File unchanged.'}
-
-
-class NotAccessible(HISMessage):
-    """Indicates that the inode is not accessible"""
-
-    STATUS = 403
-    LOCALE = {
-        Language.DE_DE: 'Zugriff verweigert.',
-        Language.EN_US: 'Access denied.'}
 
 
 class NotExecutable(HISMessage):

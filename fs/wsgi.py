@@ -10,7 +10,7 @@ from his.api.handlers import AuthorizedService
 from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
     DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
     FileExists, FileCreated, FileUpdated, FileDeleted, FileUnchanged, \
-    NotAccessible, NotWritable
+    NotExecutable, NotWritable
 from .orm import Inode
 
 
@@ -64,7 +64,7 @@ class FS(AuthorizedService):
                     group=self.customer)
 
                 if parent.isdir:
-                    if parent.accessible_by(self.account):
+                    if parent.executable(self.account):
                         if parent.writable_by(self.account):
                             inode = Inode()
 
@@ -90,7 +90,7 @@ class FS(AuthorizedService):
                         else:
                             raise NotWritable(basedir) from None
                     else:
-                        raise NotAccessible(basedir) from None
+                        raise NotExecutable(basedir) from None
                 else:
                     raise NotADirectory(basedir) from None
             else:
