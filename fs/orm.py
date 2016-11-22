@@ -108,12 +108,12 @@ class Inode(module_model('fs')):
             try:
                 parent = cls.getrel(node, parent, owner, group)
             except DoesNotExist:
-                raise NoSuchNode(cls.PATHSEP.join(walked))
+                raise NoSuchNode() from None
             else:
                 # Bail out if the node is a file
                 # but is expected to have children.
                 if parent.isfile and revpath:
-                    raise NotADirectory(cls.PATHSEP.join(walked))
+                    raise NotADirectory() from None
 
         return parent
 

@@ -88,11 +88,11 @@ class FS(AuthorizedService):
                                 inode.save()
                                 return FileCreated()
                         else:
-                            raise NotWritable(basedir) from None
+                            raise NotWritable() from None
                     else:
-                        raise NotExecutable(basedir) from None
+                        raise NotExecutable() from None
                 else:
-                    raise NotADirectory(basedir) from None
+                    raise NotADirectory() from None
             else:
                 raise FileExists() from None
 

@@ -40,10 +40,6 @@ class NotADirectory(FileSystemError):
         Language.DE_DE: 'Ist kein Ordner.',
         Language.EN_US: 'Not a directory.'}
 
-    def __init__(self, path, *args, **kwargs):
-        self.path = path
-        super().__init__(*args, **kwargs)
-
 
 class NotAFile(FileSystemError):
     """Indicates that an inode is not a
@@ -55,10 +51,6 @@ class NotAFile(FileSystemError):
         Language.DE_DE: 'Ist keine Datei.',
         Language.EN_US: 'Not a file.'}
 
-    def __init__(self, path, *args, **kwargs):
-        self.path = path
-        super().__init__(*args, **kwargs)
-
 
 class NoSuchNode(FileSystemError):
     """Indicates that the respective path node does not exists"""
@@ -67,10 +59,6 @@ class NoSuchNode(FileSystemError):
     LOCALE = {
         Language.DE_DE: 'Knoten nicht vorhanden.',
         Language.EN_US: 'Not such node.'}
-
-    def __init__(self, path, *args, **kwargs):
-        self.path = path
-        super().__init__(*args, **kwargs)
 
 
 class ReadError(FileSystemError):
