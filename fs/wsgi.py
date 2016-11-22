@@ -4,11 +4,12 @@ from os.path import dirname, basename
 from contextlib import suppress
 
 from homeinfo.lib.wsgi import OK, JSON, Binary
+from filedb import FileError
 
 from his.api.handlers import AuthorizedService
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
-    DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
+    DeletionError, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
     FileExists, FileCreated, FileUpdated, FileDeleted, FileUnchanged, \
     NotExecutable, NotWritable
 from .orm import Inode
@@ -139,7 +140,7 @@ class FS(AuthorizedService):
         else:
             try:
                 inode.remove(recursive=self.query.get('recursive', False))
-            except DirectoryNotEmpty as e:
-                raise e from None
+            except FileError:
+                raise DeletionError() from None
             else:
                 return FileDeleted()

@@ -11,6 +11,7 @@ __all__ = [
     'ReadError',
     'WriteError',
     'DirectoryNotEmpty',
+    'DeletionError',
     'NoFileNameSpecified',
     'InvalidFileName',
     'NoDataProvided',
@@ -88,6 +89,15 @@ class DirectoryNotEmpty(FileSystemError):
     LOCALE = {
         Language.DE_DE: 'Ordner ist nicht leer.',
         Language.EN_US: 'Directory is not empty.'}
+
+
+class DeletionError(FileSystemError):
+    """Indicates that an inode could not be deleted"""
+
+    STATUS = 500
+    LOCALE = {
+        Language.DE_DE: 'Fehler beim Löschen.',
+        Language.EN_US: 'Deletion error.'}
 
 
 class NoFileNameSpecified(HISMessage):
