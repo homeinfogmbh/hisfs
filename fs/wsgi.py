@@ -9,7 +9,8 @@ from his.api.handlers import AuthorizedService
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
     DirectoryNotEmpty, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
-    FileExists, FileCreated, FileUpdated, FileDeleted, FileUnchanged
+    FileExists, FileCreated, FileUpdated, FileDeleted, FileUnchanged, \
+    NotAccessible, NotWritable
 from .orm import Inode
 
 
@@ -56,7 +57,7 @@ class FS(AuthorizedService):
                     owner=self.account,
                     group=self.customer)
             except NoSuchNode:
-                basedir = dirname(self.resource
+                basedir = dirname(self.resource)
                 parent = Inode.by_path(
                     basedir,
                     owner=self.account,
@@ -87,7 +88,7 @@ class FS(AuthorizedService):
                                 inode.save()
                                 return FileCreated()
                         else:
-                            raise NotWriteable(basedir) from None
+                            raise NotWritable(basedir) from None
                     else:
                         raise NotAccessible(basedir) from None
                 else:
