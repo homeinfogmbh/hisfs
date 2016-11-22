@@ -247,8 +247,7 @@ class Inode(module_model('fs')):
             raise DirectoryNotEmpty()
 
         if self.file is not None:
-            with suppress(FileError):
-                self.FILE_CLIENT.delete(self.file)
+            self.FILE_CLIENT.delete(self.file)
 
         self.delete_instance()
 
@@ -269,52 +268,46 @@ class Inode(module_model('fs')):
         """Determines whether this inode is
         readable by a certain account
         """
-        if account == self.owner:
-            if self.mode.user.read:
-                return True
+        mode = self.mode
 
-        if account.customer == self.owner.customer:
-            if self.mode.group.read:
-                return True
-
-        if self.mode.other.read:
+        if account == self.owner and mode.user.read:
             return True
-
-        return False
+        elif account.customer == self.owner.customer and mode.group.read:
+            return True
+        elif mode.other.read:
+            return True
+        else:
+            return False
 
     def writable_by(self, account):
         """Determines whether this inode is
         writable by a certain account
         """
-        if account == self.owner:
-            if self.mode.user.write:
-                return True
+        mode = self.mode
 
-        if account.customer == self.owner.customer:
-            if self.mode.group.write:
-                return True
-
-        if self.mode.other.write:
+        if account == self.owner and mode.user.write:
             return True
-
-        return False
+        elif account.customer == self.owner.customer and mode.group.write:
+            return True
+        elif self.mode.other.write:
+            return True
+        else:
+            return False
 
     def executable_by(self, account):
         """Determines whether this inode is
         executable by a certain account
         """
-        if account == self.owner:
-            if self.mode.user.execute:
-                return True
+        mode = self.mode
 
-        if account.customer == self.owner.customer:
-            if self.mode.group.execute:
-                return True
-
-        if self.mode.other.execute:
+        if account == self.owner and mode.user.execute:
             return True
-
-        return False
+        elif account.customer == self.owner.customer and mode.group.execute:
+            return True
+        elif mode.other.execute:
+            return True
+        else:
+            return False
 
     def accessible_by(self, account):
         """Determines whether this inode is

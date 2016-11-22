@@ -29,24 +29,21 @@ class FS(AuthorizedService):
         if self.resource is None:
             return JSON(Inode.fsdict(owner=self.account, group=self.customer))
         else:
-            try:
-                inode = Inode.by_path(
-                    self.resource,
-                    owner=self.account,
-                    group=self.customer)
-            except (NoSuchNode, NotADirectory) as e:
-                raise e from None
-            else:
-                with suppress(KeyError):
-                    # Access environ first to provoke KeyError
-                    # before SHA-256 sum is derived.
-                    if self.environ['HTTP_IF_NONE_MATCH'] == inode.sha256sum:
-                        return FileUnchanged()
+            inode = Inode.by_path(
+                self.resource,
+                owner=self.account,
+                group=self.customer)
 
-                if self.query.get('sha256sum', False):
-                    return OK(inode.sha256sum)
-                else:
-                    return Binary(inode.data)
+            with suppress(KeyError):
+                # Access environ first to provoke KeyError
+                # before SHA-256 sum is derived.
+                if self.environ['HTTP_IF_NONE_MATCH'] == inode.sha256sum:
+                    return FileUnchanged()
+
+            if self.query.get('sha256sum', False):
+                return OK(inode.sha256sum)
+            else:
+                return Binary(inode.data)
 
     def post(self):
         """Adds new files"""
@@ -59,36 +56,42 @@ class FS(AuthorizedService):
                     owner=self.account,
                     group=self.customer)
             except NoSuchNode:
-                try:
-                    parent = Inode.by_path(
-                        dirname(self.resource),
-                        owner=self.account,
-                        group=self.customer)
-                except (NoSuchNode, NotADirectory) as e:
-                    raise e from None
-                else:
-                    inode = Inode()
+                basedir = dirname(self.resource
+                parent = Inode.by_path(
+                    basedir,
+                    owner=self.account,
+                    group=self.customer)
 
-                    try:
-                        inode.name = basename(self.resource)
-                    except ValueError:
-                        raise InvalidFileName()
-                    else:
-                        inode.owner = self.account
-                        inode.group = self.customer
-                        inode.parent = parent
+                if parent.isdir:
+                    if parent.accessible_by(self.account):
+                        if parent.writable_by(self.account):
+                            inode = Inode()
 
-                        if self.data:
-                            # File
-                            inode.file = inode.client.add(self.data)
+                            try:
+                                inode.name = basename(self.resource)
+                            except ValueError:
+                                raise InvalidFileName()
+                            else:
+                                inode.owner = self.account
+                                inode.group = self.customer
+                                inode.parent = parent
+                                # TODO: Set mode
+
+                                if self.data:
+                                    # File
+                                    inode.file = inode.client.add(self.data)
+                                else:
+                                    # Directory
+                                    inode.file = None
+
+                                inode.save()
+                                return FileCreated()
                         else:
-                            # Directory
-                            inode.file = None
-
-                        inode.save()
-                        return FileCreated()
-            except NotADirectory as e:
-                raise e from None
+                            raise NotWriteable(basedir) from None
+                    else:
+                        raise NotAccessible(basedir) from None
+                else:
+                    raise NotADirectory(basedir) from None
             else:
                 raise FileExists() from None
 

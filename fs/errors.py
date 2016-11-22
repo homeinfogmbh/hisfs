@@ -18,7 +18,11 @@ __all__ = [
     'FileCreated',
     'FileUpdated',
     'FileDeleted',
-    'FileUnchanged']
+    'FileUnchanged',
+    'NotAccessible',
+    'NotExecutable',
+    'NotWritable',
+    'NotReadable']
 
 
 class FileSystemError(HISMessage):
@@ -169,3 +173,39 @@ class FileUnchanged(HISMessage):
     LOCALE = {
         Language.DE_DE: 'Datei unverändert.',
         Language.EN_US: 'File unchanged.'}
+
+
+class NotAccessible(HISMessage):
+    """Indicates that the inode is not accessible"""
+
+    STATUS = 403
+    LOCALE = {
+        Language.DE_DE: 'Zugriff verweigert.',
+        Language.EN_US: 'Access denied.'}
+
+
+class NotExecutable(HISMessage):
+    """Indicates that the inode is not executable"""
+
+    STATUS = 403
+    LOCALE = {
+        Language.DE_DE: 'Ausführung verweigert.',
+        Language.EN_US: 'Execution denied.'}
+
+
+class NotWritable(HISMessage):
+    """Indicates that the inode is not writable"""
+
+    STATUS = 403
+    LOCALE = {
+        Language.DE_DE: 'Schreiben verweigert.',
+        Language.EN_US: 'Writing denied.'}
+
+
+class NotReadable(HISMessage):
+    """Indicates that the inode is not writable"""
+
+    STATUS = 403
+    LOCALE = {
+        Language.DE_DE: 'Lesen verweigert.',
+        Language.EN_US: 'Reading denied.'}
