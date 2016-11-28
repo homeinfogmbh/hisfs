@@ -144,3 +144,7 @@ class FS(AuthorizedService):
                 raise DeletionError() from None
             else:
                 return FileDeleted()
+
+    def options(self):
+        """Returns options information"""
+        return OK()
