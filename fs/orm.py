@@ -104,9 +104,12 @@ class Inode(module_model('fs')):
         while revpath:
             node = revpath.pop()
 
+            print('Processing node:', node)
+
             try:
                 inode = cls.getrel(node, inode, owner, group)
             except DoesNotExist:
+                print('Does not exist:', node)
                 raise NoSuchNode() from None
             else:
                 # Bail out if the node is a file
@@ -114,14 +117,19 @@ class Inode(module_model('fs')):
                 if inode.isfile and revpath:
                     raise NotADirectory() from None
 
+        print('Exists:', node, inode, inode.name)
         return inode
 
     @classmethod
     def by_path(cls, path, owner=None, group=None):
         """Yields files and directories by the respective path"""
+        print('Processing path:', path)
+
         if not path:
+            print('Empty path:', path)
             revpath = []
         else:
+            print('Non-empty path:', path)
             revpath = list(reversed(normpath(path).split(cls.PATHSEP)[1:]))
 
         return cls.by_revpath(revpath, owner=owner, group=group)
