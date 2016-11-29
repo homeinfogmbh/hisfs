@@ -6,6 +6,7 @@ from contextlib import suppress
 from homeinfo.lib.wsgi import OK, JSON, Binary
 from filedb import FileError
 
+from his.api.errors import NotAnInteger
 from his.api.handlers import AuthorizedService
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
@@ -25,6 +26,23 @@ class FS(AuthorizedService):
     NAME = 'FileSystem'
     DESCRIPTION = 'Dateisystem'
     PROMOTE = False
+
+    @property
+    def mode(self):
+        """Returns the desired file mode"""
+        try:
+            mode = self.query['mode']
+        except KeyError:
+            # Return default modes
+            if self.data:
+                return 0o644
+            else:
+                return 0o755
+        else:
+            try:
+                return int(mode)
+            except (TypeError, ValueError):
+                raise NotAnInteger('mode', mode) from None
 
     def get(self):
         """Retrieves (a) file(s)"""
@@ -79,13 +97,9 @@ class FS(AuthorizedService):
                                 inode.parent = parent
 
                                 if self.data:
-                                    # File
                                     inode.data = self.data
-                                    inode.mode = 0o644
-                                else:
-                                    # Directory
-                                    inode.mode = 0o755
 
+                                inode.mode = self.mode
                                 inode.save()
                                 return FileCreated()
                         else:
