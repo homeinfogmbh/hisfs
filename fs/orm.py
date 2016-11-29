@@ -101,7 +101,6 @@ class Inode(module_model('fs')):
         """Finds records by reversed path nodes"""
         walked = ['']
         parent = None
-        print('Revpath:', revpath)
 
         while revpath:
             node = revpath.pop()
@@ -117,16 +116,16 @@ class Inode(module_model('fs')):
                 if parent.isfile and revpath:
                     raise NotADirectory() from None
 
-        print('Walked:', walked)
-        print('Parent:', parent)
         return parent
 
     @classmethod
     def by_path(cls, path, owner=None, group=None):
         """Yields files and directories by the respective path"""
-        return cls.by_revpath(
-            list(reversed(normpath(path).split(cls.PATHSEP))),
-            owner=owner, group=group)
+        if not path:
+            return cls.root_for(owner=owner, group=group)
+        else:
+            path = list(reversed(normpath(path).split(cls.PATHSEP)))
+            return cls.by_revpath(path, owner=owner, group=group)
 
     @property
     def name(self):
