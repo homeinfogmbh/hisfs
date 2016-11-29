@@ -196,7 +196,7 @@ class Inode(module_model('fs')):
     @data.setter
     def data(self, data):
         """Returns the file's content"""
-        if self.file is None:
+        if self.file is None and self.id is not None:
             raise NotAFile()
         else:
             try:
