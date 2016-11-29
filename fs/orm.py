@@ -117,7 +117,7 @@ class Inode(module_model('fs')):
                 if inode.isfile and revpath:
                     raise NotADirectory() from None
 
-        print('Exists:', node, inode, inode.name)
+        print('iNode:', inode, inode.name)
         return inode
 
     @classmethod
