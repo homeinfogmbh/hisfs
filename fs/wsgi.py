@@ -77,10 +77,14 @@ class FS(AuthorizedService):
                                 inode.owner = self.account
                                 inode.group = self.customer
                                 inode.parent = parent
-                                # TODO: Set mode
 
                                 if self.data:
+                                    # File
                                     inode.data = self.data
+                                    inode.mode = 0o644
+                                else:
+                                    # Directory
+                                    inode.mode = 0o755
 
                                 inode.save()
                                 return FileCreated()
