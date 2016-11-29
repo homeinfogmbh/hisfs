@@ -102,6 +102,8 @@ class Inode(module_model('fs')):
         walked = ['']
         parent = None
 
+        print('Revpath:', revpath)
+
         while revpath:
             node = revpath.pop()
             walked.append(node)
@@ -116,6 +118,8 @@ class Inode(module_model('fs')):
                 if parent.isfile and revpath:
                     raise NotADirectory() from None
 
+        print('Walked:', walked)
+        print('Parent:', parent)
         return parent
 
     @classmethod
@@ -124,6 +128,9 @@ class Inode(module_model('fs')):
         if not path:
             return cls.root_for(owner=owner, group=group)
         else:
+            if not path.startswith(cls.PATHSEP):
+                path = cls.PATHSEP + path
+
             path = list(reversed(normpath(path).split(cls.PATHSEP)))
             return cls.by_revpath(path, owner=owner, group=group)
 
