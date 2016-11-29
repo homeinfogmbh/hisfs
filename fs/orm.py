@@ -123,14 +123,15 @@ class Inode(module_model('fs')):
     @classmethod
     def by_path(cls, path, owner=None, group=None):
         """Yields files and directories by the respective path"""
-        print('Processing path:', path)
-
         if not path:
-            print('Empty path:', path)
             revpath = []
         else:
-            print('Non-empty path:', path)
-            revpath = list(reversed(normpath(path).split(cls.PATHSEP)[1:]))
+            normed_path = normpath(path)
+
+            if normed_path == cls.PATHSEP:
+                revpath = []
+            else:
+                revpath = list(reversed(normed_path.split(cls.PATHSEP)))
 
         return cls.by_revpath(revpath, owner=owner, group=group)
 
