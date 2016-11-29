@@ -106,6 +106,8 @@ class Inode(module_model('fs')):
             node = revpath.pop()
             walked.append(node)
 
+            print('Walking:', node)
+
             try:
                 parent = cls.getrel(node, parent, owner, group)
             except DoesNotExist:
@@ -121,6 +123,8 @@ class Inode(module_model('fs')):
     @classmethod
     def by_path(cls, path, owner=None, group=None):
         """Yields files and directories by the respective path"""
+        print('Path:', path)
+
         if not path:
             return cls.root_for(owner=owner, group=group)
         else:
