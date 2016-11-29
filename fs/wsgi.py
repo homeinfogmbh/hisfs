@@ -65,7 +65,7 @@ class FS(AuthorizedService):
                     group=self.customer)
 
                 if parent.isdir:
-                    if parent.executable(self.account):
+                    if parent.executable_by(self.account):
                         if parent.writable_by(self.account):
                             inode = Inode()
 
