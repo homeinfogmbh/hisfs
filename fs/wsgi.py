@@ -93,11 +93,12 @@ class FS(AuthorizedService):
             try:
                 self.node_path(self.resource)
             except NoSuchNode:
-                for parent in self.node_path(dirname(self.resource)):
-                    if not parent.executable_by(self.account):
+                *parents, parent = self.node_path(dirname(self.resource))
+
+                for parent_ in parents:
+                    if not parent_.executable_by(self.account):
                         raise NotExecutable() from None
 
-                # TODO: Handle possible UnboundLocalError
                 if parent.isdir:
                     if parent.executable_by(self.account):
                         if parent.writable_by(self.account):
