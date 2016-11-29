@@ -128,11 +128,9 @@ class Inode(module_model('fs')):
         if not path:
             return cls.root_for(owner=owner, group=group)
         else:
-            if not path.startswith(cls.PATHSEP):
-                path = cls.PATHSEP + path
-
-            path = list(reversed(normpath(path).split(cls.PATHSEP)))
-            return cls.by_revpath(path, owner=owner, group=group)
+            nodes = normpath(path).split(cls.PATHSEP)[1:]
+            revpath = list(reversed(nodes))
+            return cls.by_revpath(revpath, owner=owner, group=group)
 
     @property
     def name(self):
