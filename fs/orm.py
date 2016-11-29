@@ -1,5 +1,6 @@
 """ORM models"""
 
+from os.path import normpath
 from contextlib import suppress
 
 from peewee import DoesNotExist, ForeignKeyField, IntegerField, CharField
@@ -121,7 +122,7 @@ class Inode(module_model('fs')):
     def by_path(cls, path, owner=None, group=None):
         """Yields files and directories by the respective path"""
         return cls.by_revpath(
-            list(reversed(path.split(cls.PATHSEP))),
+            list(reversed(normpath(path).split(cls.PATHSEP))),
             owner=owner, group=group)
 
     @property
