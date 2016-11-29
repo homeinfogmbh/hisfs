@@ -80,11 +80,7 @@ class FS(AuthorizedService):
                                 # TODO: Set mode
 
                                 if self.data:
-                                    # File
-                                    inode.file = inode.client.add(self.data)
-                                else:
-                                    # Directory
-                                    inode.file = None
+                                    inode.data = self.data
 
                                 inode.save()
                                 return FileCreated()
