@@ -97,31 +97,30 @@ class Inode(module_model('fs')):
                 (cls.group == group))
 
     @classmethod
-    def by_revpath(cls, revpath, owner=None, group=None):
+    def _node_path(cls, revpath, owner=None, group=None):
         """Finds records by reversed path nodes"""
-        inode = cls.root_for(owner=owner, group=group)
+        parent = cls.root_for(owner=owner, group=group)
+        path = [parent]
 
         while revpath:
             node = revpath.pop()
 
-            print('Processing node:', node)
-
             try:
-                inode = cls.getrel(node, inode, owner, group)
+                parent = cls.getrel(node, parent, owner, group)
             except DoesNotExist:
-                print('Does not exist:', node)
                 raise NoSuchNode() from None
             else:
                 # Bail out if the node is a file
                 # but is expected to have children.
-                if inode.isfile and revpath:
+                if parent.isfile and revpath:
                     raise NotADirectory() from None
+                else:
+                    path.append(parent)
 
-        print('iNode:', inode, inode.name)
-        return inode
+        return path
 
     @classmethod
-    def by_path(cls, path, owner=None, group=None):
+    def node_path(cls, path, owner=None, group=None):
         """Yields files and directories by the respective path"""
         if not path:
             revpath = []
@@ -133,7 +132,7 @@ class Inode(module_model('fs')):
             else:
                 revpath = list(reversed(normed_path.split(cls.PATHSEP)))
 
-        return cls.by_revpath(revpath, owner=owner, group=group)
+        return cls._node_path(revpath, owner=owner, group=group)
 
     @property
     def name(self):
@@ -281,9 +280,11 @@ class Inode(module_model('fs')):
         """
         mode = self.mode
 
-        if account == self.owner and mode.user.read:
+        if account.root:
             return True
-        elif account.customer == self.owner.customer and mode.group.read:
+        elif mode.user.read and account == self.owner:
+            return True
+        elif mode.group.read and account.customer == self.owner.customer:
             return True
         elif mode.other.read:
             return True
@@ -296,11 +297,11 @@ class Inode(module_model('fs')):
         """
         mode = self.mode
 
-        if account == self.owner and mode.user.write:
+        if mode.user.write and account == self.owner:
             return True
-        elif account.customer == self.owner.customer and mode.group.write:
+        elif mode.group.write and account.customer == self.owner.customer:
             return True
-        elif self.mode.other.write:
+        elif mode.other.write:
             return True
         else:
             return False
@@ -311,18 +312,11 @@ class Inode(module_model('fs')):
         """
         mode = self.mode
 
-        if account == self.owner and mode.user.execute:
+        if mode.user.execute and account == self.owner:
             return True
-        elif account.customer == self.owner.customer and mode.group.execute:
+        elif mode.group.execute and account.customer == self.owner.customer:
             return True
         elif mode.other.execute:
             return True
         else:
             return False
-
-    def accessible_by(self, account):
-        """Determines whether this inode is
-        accessible by a certain account
-        """
-        return self.readable_by(account) and (
-            self.isfile or self.executable_by(account))

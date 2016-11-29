@@ -12,7 +12,7 @@ from his.api.handlers import AuthorizedService
 from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
     DeletionError, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
     FileExists, FileCreated, FileUpdated, FileDeleted, FileUnchanged, \
-    NotExecutable, NotWritable
+    NotExecutable, NotWritable, NotReadable
 from .orm import Inode
 
 
@@ -26,6 +26,11 @@ class FS(AuthorizedService):
     NAME = 'FileSystem'
     DESCRIPTION = 'Dateisystem'
     PROMOTE = False
+
+    @property
+    def sha256sum(self):
+        """Returns the specified SHA-256 checksum"""
+        return self.environ['HTTP_IF_NONE_MATCH']
 
     @property
     def mode(self):
@@ -44,26 +49,41 @@ class FS(AuthorizedService):
             except (TypeError, ValueError):
                 raise NotAnInteger('mode', mode) from None
 
+    def node_path(self, path):
+        """Returns the inode for the respective path"""
+        return Inode.node_path(path, owner=self.account, group=self.customer)
+
     def get(self):
         """Retrieves (a) file(s)"""
         if self.resource is None:
             return JSON(Inode.fsdict(owner=self.account, group=self.customer))
         else:
-            inode = Inode.by_path(
-                self.resource,
-                owner=self.account,
-                group=self.customer)
+            *parents, inode = self.node_path(self.resource)
 
-            with suppress(KeyError):
-                # Access environ first to provoke KeyError
-                # before SHA-256 sum is derived.
-                if self.environ['HTTP_IF_NONE_MATCH'] == inode.sha256sum:
-                    return FileUnchanged()
+            for parent in parents:
+                if not parent.executable_by(self.account):
+                    raise NotExecutable() from None
 
-            if self.query.get('sha256sum', False):
-                return OK(inode.sha256sum)
+            if inode.isdir:
+                if inode.executable_by(self.account):
+                    if inode.readable_by(self.account):
+                        return JSON(inode.to_dict())
+                    else:
+                        raise NotReadable() from None
+                else:
+                    raise NotExecutable() from None
             else:
-                return Binary(inode.data)
+                if inode.readable_by(self.account):
+                    with suppress(KeyError):
+                        if self.sha256sum == inode.sha256sum:
+                            return FileUnchanged()
+
+                    if self.query.get('sha256sum', False):
+                        return OK(inode.sha256sum)
+                    else:
+                        return Binary(inode.data)
+                else:
+                    raise NotReadable() from None
 
     def post(self):
         """Adds new files"""
@@ -71,17 +91,13 @@ class FS(AuthorizedService):
             raise NoFileNameSpecified()
         else:
             try:
-                Inode.by_path(
-                    self.resource,
-                    owner=self.account,
-                    group=self.customer)
+                self.node_path(self.resource)
             except NoSuchNode:
-                basedir = dirname(self.resource)
-                parent = Inode.by_path(
-                    basedir,
-                    owner=self.account,
-                    group=self.customer)
+                for parent in self.node_path(dirname(self.resource)):
+                    if not parent.executable_by(self.account):
+                        raise NotExecutable() from None
 
+                # TODO: Handle possible UnboundLocalError
                 if parent.isdir:
                     if parent.executable_by(self.account):
                         if parent.writable_by(self.account):
@@ -117,7 +133,7 @@ class FS(AuthorizedService):
             raise NoFileNameSpecified()
         else:
             try:
-                inode = Inode.by_path(
+                inode = Inode.node_path(
                     self.resource,
                     owner=self.account,
                     group=self.customer)
@@ -145,7 +161,7 @@ class FS(AuthorizedService):
     def delete(self):
         """Deletes a file"""
         try:
-            inode = Inode.by_path(
+            inode = Inode.node_path(
                 self.resource,
                 owner=self.account,
                 group=self.customer)
