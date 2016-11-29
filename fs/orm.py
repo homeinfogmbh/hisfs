@@ -76,21 +76,21 @@ class Inode(module_model('fs')):
     def root_for(cls, owner=None, group=None):
         """Yields elements of the respective root folder"""
         if owner is None and group is None:
-            return cls.select().where(
+            return cls.get(
                 (cls.file >> None) &
                 (cls.parent >> None))
         elif owner is not None and group is None:
-            return cls.select().where(
+            return cls.get(
                 (cls.file >> None) &
                 (cls.parent >> None) &
                 (cls.owner == owner))
         elif owner is None and group is not None:
-            return cls.select().where(
+            return cls.get(
                 (cls.file >> None) &
                 (cls.parent >> None) &
                 (cls.group == group))
         else:
-            return cls.select().where(
+            return cls.get(
                 (cls.file >> None) &
                 (cls.parent >> None) &
                 (cls.owner == owner) &
