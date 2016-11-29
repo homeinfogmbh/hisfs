@@ -102,8 +102,6 @@ class Inode(module_model('fs')):
         walked = ['']
         parent = None
 
-        print('Revpath:', revpath)
-
         while revpath:
             node = revpath.pop()
             walked.append(node)
@@ -118,8 +116,6 @@ class Inode(module_model('fs')):
                 if parent.isfile and revpath:
                     raise NotADirectory() from None
 
-        print('Walked:', walked)
-        print('Parent:', parent)
         return parent
 
     @classmethod
