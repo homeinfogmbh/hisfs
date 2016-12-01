@@ -75,6 +75,9 @@ class FS(AuthorizedService):
             else:
                 if inode.readable_by(self.account):
                     with suppress(KeyError):
+                        # Access self.sha256sum first to trigger a possible
+                        # KeyError before the resource-hungry inode.sha256sum
+                        # is invoked.
                         if self.sha256sum == inode.sha256sum:
                             return FileUnchanged()
 
