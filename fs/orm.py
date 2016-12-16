@@ -13,7 +13,7 @@ from his.orm import module_model, Account
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty
 
-__all__ = ['Inode']
+__all__ = ['Inode', 'Reference']
 
 
 def root(inodes):
@@ -238,6 +238,11 @@ class Inode(module_model('fs')):
         else:
             raise NotADirectory()
 
+    @property
+    def references(self):
+        """Yields references"""
+        return Reference.select().where(Reference.inode == self)
+
     def remove(self, recursive=False):
         """Removes a virtual inode"""
         if recursive:
@@ -320,3 +325,18 @@ class Inode(module_model('fs')):
             return True
         else:
             return False
+
+
+class Reference(module_model('fs')):
+    """Stores references to inodes from other systems"""
+
+    inode = ForeignKeyField(Inode, db_column='inode')
+    module = CharField(255, null=True, default=None)  # The referencing module
+    table = CharField(255)  # The table that references the inode
+    ident = IntegerField()  # The ID of the referencing record
+
+    def __iter__(self):
+        """Yields the reference elements"""
+        yield self.module
+        yield self.table
+        yield self.ident
