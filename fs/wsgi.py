@@ -56,7 +56,8 @@ class FS(AuthorizedService):
     def get(self):
         """Retrieves (a) file(s)"""
         if self.resource is None:
-            return JSON(Inode.fsdict(owner=self.account, group=self.customer))
+            root = Inode.root_for(owner=None, group=None)
+            return JSON(root.to_dict())
         else:
             *parents, inode = self.node_path(self.resource)
 
