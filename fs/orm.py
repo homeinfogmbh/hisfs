@@ -275,7 +275,15 @@ class Inode(module_model('fs')):
         """
         if (self.parent or self).executable_by(account):
             fs_dict = self.to_dict()
-            fs_dict['children'] = [c.dict_for(account) for c in self.children]
+            children = []
+
+            try:
+                for c in self.children:
+                    children.append(c.dict_for(account))
+            except NotADirectory:
+                pass
+            else:
+                fs_dict['children'] = children
 
             return fs_dict
         else:
