@@ -263,16 +263,23 @@ class Inode(module_model('fs')):
 
     def to_dict(self):
         """Converts the inode into a dictionary"""
-        result = {
+        return = {
             'name': self.name,
             'owner': repr(self.owner),
             'group': repr(self.group),
             'mode': str(self.mode)}
 
-        if self.isdir:
-            result['children'] = [child.to_dict() for child in self.children]
+    def dict_for(self, account):
+        """Converts the inode into a dictionary
+        considering access permissions
+        """
+        if (self.parent or self).executable_by(account):
+            fs_dict = self.to_dict()
+            fs_dict['children'] = [c.dict_for(account) for c in self.children]
 
-        return result
+            return fs_dict
+        else:
+            return {}
 
     def readable_by(self, account):
         """Determines whether this inode is
