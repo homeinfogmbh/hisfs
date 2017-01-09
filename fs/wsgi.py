@@ -71,6 +71,11 @@ class FS(AuthorizedService):
         else:
             return Customer.find(group)
 
+    @property
+    def recursive(self):
+        """Returns the recursive flag"""
+        return self.query.get('recursive', False)
+
     def node_path(self, path):
         """Returns the inode for the respective path"""
         return Inode.node_path(path, owner=self.owner, group=self.group)
@@ -196,7 +201,7 @@ class FS(AuthorizedService):
             raise e from None
         else:
             try:
-                inode.remove(recursive=self.query.get('recursive', False))
+                inode.remove_by(self.account, recursive=self.recursive)
             except FileError:
                 raise DeletionError() from None
             else:

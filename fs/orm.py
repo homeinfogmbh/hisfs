@@ -272,6 +272,11 @@ class Inode(module_model('fs')):
 
         self.delete_instance()
 
+    def remove_by(self, account, recursive=False):
+        """Removes the inode considering access permissions"""
+        if self.parent.writable_by(account):
+            self.remove(recursive=recursive)
+
     def to_dict(self, children=True, mimetype=True):
         """Converts the inode into a dictionary"""
         result = {
