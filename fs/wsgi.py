@@ -3,11 +3,13 @@
 from os.path import dirname, basename
 from contextlib import suppress
 
+from homeinfo.crm import Customer
 from homeinfo.lib.wsgi import OK, JSON, Binary
 from filedb import FileError
 
 from his.api.errors import NotAnInteger
 from his.api.handlers import AuthorizedService
+from his.orm import Account
 
 from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
     DeletionError, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
@@ -49,14 +51,34 @@ class FS(AuthorizedService):
             except (TypeError, ValueError):
                 raise NotAnInteger('mode', mode) from None
 
+    @property
+    def owner(self):
+        """Returns the respective owner"""
+        try:
+            owner = self.query['owner']
+        except KeyError:
+            return self.account
+        else:
+            return Account.find(owner)
+
+    @property
+    def group(self):
+        """Returns the respective group"""
+        try:
+            group = self.query['group']
+        except KeyError:
+            return self.customer
+        else:
+            return Customer.find(group)
+
     def node_path(self, path):
         """Returns the inode for the respective path"""
-        return Inode.node_path(path, owner=self.account, group=self.customer)
+        return Inode.node_path(path, owner=self.owner, group=self.group)
 
     def get(self):
         """Retrieves (a) file(s)"""
         if self.resource is None:
-            root = Inode.root_for(owner=None, group=None)
+            root = Inode.root_for(owner=self.owner, group=self.group)
             return JSON(root.dict_for(self.account))
         else:
             *parents, inode = self.node_path(self.resource)
@@ -140,8 +162,8 @@ class FS(AuthorizedService):
             try:
                 inode = Inode.node_path(
                     self.resource,
-                    owner=self.account,
-                    group=self.customer)
+                    owner=self.owner,
+                    group=self.group)
             except (NoSuchNode, NotADirectory) as e:
                 raise e from None
             else:
@@ -168,8 +190,8 @@ class FS(AuthorizedService):
         try:
             inode = Inode.node_path(
                 self.resource,
-                owner=self.account,
-                group=self.customer)
+                owner=self.owner,
+                group=self.group)
         except (NoSuchNode, NotADirectory) as e:
             raise e from None
         else:
