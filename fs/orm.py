@@ -265,8 +265,8 @@ class Inode(module_model('fs')):
         """Converts the inode into a dictionary"""
         result = {
             'name': self.name,
-            'owner': self.owner.name,
-            'group': self.group.name,
+            'owner': repr(self.owner),
+            'group': repr(self.group),
             'mode': str(self.mode)}
 
         if self.isdir:
