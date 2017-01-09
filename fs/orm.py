@@ -231,6 +231,17 @@ class Inode(module_model('fs')):
                 raise ReadError() from None
 
     @property
+    def mimetype(self):
+        """Returns the MIME type"""
+        if self.file is None:
+            raise NotAFile()
+        else:
+            try:
+                self.FILE_CLIENT.mimetype(self.file)
+            except FileError:
+                raise ReadError() from None
+
+    @property
     def children(self):
         """Yields the directoie's children"""
         if self.isdir:
@@ -261,29 +272,32 @@ class Inode(module_model('fs')):
 
         self.delete_instance()
 
-    def to_dict(self):
+    def to_dict(self, children=True):
         """Converts the inode into a dictionary"""
-        return {
+        result = {
             'name': self.name,
             'owner': repr(self.owner),
             'group': repr(self.group),
             'mode': str(self.mode)}
+
+        if self.isdir:
+            if children:
+                result['children'] = [c.name for c in self.children]
+        else:
+            result['mimetype'] = self.mimetype
+
+        return result
 
     def dict_for(self, account):
         """Converts the inode into a dictionary
         considering access permissions
         """
         if (self.parent or self).executable_by(account):
-            fs_dict = self.to_dict()
-            children = []
+            fs_dict = self.to_dict(children=False)
 
-            try:
-                for c in self.children:
-                    children.append(c.dict_for(account))
-            except NotADirectory:
-                pass
-            else:
-                fs_dict['children'] = children
+            if self.isdir:
+                fs_dict['children'] = [
+                    c.to_dict(account) for c in self.children]
 
             return fs_dict
         else:
