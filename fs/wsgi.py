@@ -11,10 +11,9 @@ from his.api.errors import NotAnInteger
 from his.api.handlers import AuthorizedService
 from his.orm import Account
 
-from .errors import NotADirectory, NotAFile, NoSuchNode, WriteError, \
-    DeletionError, NoFileNameSpecified, InvalidFileName, NoDataProvided, \
-    FileExists, FileCreated, FileUpdated, FileDeleted, FileUnchanged, \
-    NotExecutable, NotWritable, NotReadable
+from .errors import NotADirectory, NoSuchNode, DeletionError, \
+    NoFileNameSpecified, InvalidFileName, FileExists, FileCreated, \
+    FileDeleted, FileUnchanged, NotExecutable, NotWritable, NotReadable
 from .orm import Inode
 
 
