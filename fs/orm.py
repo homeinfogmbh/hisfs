@@ -263,7 +263,7 @@ class Inode(module_model('fs')):
 
     def to_dict(self):
         """Converts the inode into a dictionary"""
-        return = {
+        return {
             'name': self.name,
             'owner': repr(self.owner),
             'group': repr(self.group),
