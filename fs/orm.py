@@ -226,7 +226,7 @@ class Inode(module_model('fs')):
             raise NotAFile()
         else:
             try:
-                self.FILE_CLIENT.sha256sum(self.file)
+                return self.FILE_CLIENT.sha256sum(self.file)
             except FileError:
                 raise ReadError() from None
 
@@ -237,7 +237,7 @@ class Inode(module_model('fs')):
             raise NotAFile()
         else:
             try:
-                self.FILE_CLIENT.mimetype(self.file)
+                return self.FILE_CLIENT.mimetype(self.file)
             except FileError:
                 raise ReadError() from None
 
