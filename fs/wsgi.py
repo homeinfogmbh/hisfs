@@ -159,37 +159,6 @@ class FS(AuthorizedService):
             else:
                 raise FileExists() from None
 
-    def put(self):
-        """Overrides an existing file"""
-        if self.resource is None:
-            raise NoFileNameSpecified()
-        else:
-            try:
-                inode = Inode.node_path(
-                    self.resource,
-                    owner=self.owner,
-                    group=self.group)
-            except (NoSuchNode, NotADirectory) as e:
-                raise e from None
-            else:
-                try:
-                    name = self.query['name']
-                except KeyError:
-                    if self.data:
-                        try:
-                            inode.data = self.data
-                        except (NotAFile, WriteError) as e:
-                            raise e from None
-                        else:
-                            inode.save()
-                            return FileUpdated()
-                    else:
-                        raise NoDataProvided()
-                else:
-                    inode.name = name
-                    inode.save()
-                    return FileUpdated()
-
     def delete(self):
         """Deletes a file"""
         try:
