@@ -272,7 +272,7 @@ class Inode(module_model('fs')):
 
         self.delete_instance()
 
-    def to_dict(self, children=True):
+    def to_dict(self, children=True, mimetype=True):
         """Converts the inode into a dictionary"""
         result = {
             'name': self.name,
@@ -284,7 +284,8 @@ class Inode(module_model('fs')):
             if children:
                 result['children'] = [c.name for c in self.children]
         else:
-            result['mimetype'] = self.mimetype
+            if mimetype:
+                result['mimetype'] = self.mimetype
 
         return result
 
