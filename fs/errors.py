@@ -22,7 +22,8 @@ __all__ = [
     'FileUnchanged',
     'NotExecutable',
     'NotWritable',
-    'NotReadable']
+    'NotReadable',
+    'RootDeletionError']
 
 
 class FileSystemError(HISMessage):
@@ -197,3 +198,12 @@ class NotReadable(HISMessage):
     LOCALE = {
         Language.DE_DE: 'Lesen verweigert.',
         Language.EN_US: 'Reading denied.'}
+
+
+class RootDeletionError(HISMessage):
+    """Indicates that the root inode was attempted to be deleted"""
+
+    STATUS = 403
+    LOCALE = {
+        Language.DE_DE: 'Wurzelverzeichnis darf nicht gelöscht werden.',
+        Language.EN_US: 'Deletion of root directory is not permitted.'}

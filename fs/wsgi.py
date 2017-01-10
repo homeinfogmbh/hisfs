@@ -13,7 +13,8 @@ from his.orm import Account
 
 from .errors import NotADirectory, NoSuchNode, DeletionError, \
     NoFileNameSpecified, InvalidFileName, FileExists, FileCreated, \
-    FileDeleted, FileUnchanged, NotExecutable, NotWritable, NotReadable
+    FileDeleted, FileUnchanged, NotExecutable, NotWritable, NotReadable, \
+    RootDeletionError
 from .orm import Inode
 
 
@@ -160,20 +161,20 @@ class FS(AuthorizedService):
 
     def delete(self):
         """Deletes a file"""
-        try:
-            inode = Inode.node_path(
-                self.resource,
-                owner=self.owner,
-                group=self.group)
-        except (NoSuchNode, NotADirectory) as e:
-            raise e from None
-        else:
-            try:
-                inode.remove_by(self.account, recursive=self.recursive)
-            except FileError:
-                raise DeletionError() from None
+        *parents, inode = self.node_path(self.resource)
+
+        if parents:
+            if parents[-1].writable_by(self.account):
+                try:
+                    inode.remove_by(self.account, recursive=self.recursive)
+                except FileError:
+                    raise DeletionError() from None
+                else:
+                    return FileDeleted()
             else:
-                return FileDeleted()
+                raise NotWritable() from None
+        else:
+            raise RootDeletionError() from None
 
     def options(self):
         """Returns options information"""
