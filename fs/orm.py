@@ -242,6 +242,17 @@ class Inode(module_model('fs')):
                 raise ReadError() from None
 
     @property
+    def size(self):
+        """Returns the size in bytes"""
+        if self.file is None:
+            raise NotAFile()
+        else:
+            try:
+                return self.FILE_CLIENT.size(self.file)
+            except FileError:
+                raise ReadError() from None
+
+    @property
     def children(self):
         """Yields the directoie's children"""
         if self.isdir:
@@ -272,12 +283,7 @@ class Inode(module_model('fs')):
 
         self.delete_instance()
 
-    def remove_by(self, account, recursive=False):
-        """Removes the inode considering access permissions"""
-        if self.parent.writable_by(account):
-            self.remove(recursive=recursive)
-
-    def to_dict(self, children=True, mimetype=True):
+    def to_dict(self, children=True, mimetype=True, size=True):
         """Converts the inode into a dictionary"""
         result = {
             'name': self.name,
@@ -291,6 +297,9 @@ class Inode(module_model('fs')):
         else:
             if mimetype:
                 result['mimetype'] = self.mimetype
+
+            if size:
+                result['size'] = self.size
 
         return result
 

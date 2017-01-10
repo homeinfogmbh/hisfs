@@ -163,18 +163,24 @@ class FS(AuthorizedService):
         """Deletes a file"""
         *parents, inode = self.node_path(self.resource)
 
-        if parents:
-            if parents[-1].writable_by(self.account):
+        for parent in parents:
+            if not parent.executable_by(self.account):
+                raise NotExecutable() from None
+
+        try:
+            parent = parents[-1]
+        except IndexError:
+            raise RootDeletionError() from None
+        else:
+            if parent.writable_by(self.account):
                 try:
-                    inode.remove_by(self.account, recursive=self.recursive)
+                    inode.remove(recursive=False)
                 except FileError:
                     raise DeletionError() from None
                 else:
                     return FileDeleted()
             else:
                 raise NotWritable() from None
-        else:
-            raise RootDeletionError() from None
 
     def options(self):
         """Returns options information"""
