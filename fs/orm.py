@@ -13,7 +13,28 @@ from his.orm import module_model, Account
 from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
     WriteError, DirectoryNotEmpty
 
-__all__ = ['Inode']
+__all__ = [
+    'FileNotFound',
+    'ConsistencyError',
+    'Inode']
+
+
+class FileNotFound(Exception):
+    """Indicates that the respective file was not found"""
+
+    def __init__(self, path):
+        super().__init__(path)
+        self.path = path
+
+
+class ConsistencyError(Exception):
+    """Indicates that the consistency of
+    the file system has been compromised
+    """
+
+    def __init__(self, inode):
+        super().__init__(inode)
+        self.inode = inode
 
 
 def root(inodes):
@@ -54,6 +75,35 @@ class Inode(module_model('fs')):
         """
         for inode in cls.by_owner:
             if inode.group == group:
+                yield inode
+
+    @classmethod
+    def from_path(cls, path, customer):
+        """Returns the INode handler from the respective path"""
+        parent = cls.root_for(group=customer)
+        processed_path = ['']
+
+        for inode in path.split(cls.PATHSEP):
+            if not inode:
+                continue
+            else:
+                processed_path.append(inode)
+
+                try:
+                    parent = cls.get(
+                        (cls.group == customer) &
+                        (cls.parent == parent) &
+                        (cls.name == inode))
+                except DoesNotExist:
+                    raise FileNotFound(cls.PATHSEP.join(processed_path))
+
+        return parent
+
+    @classmethod
+    def by_sha256(cls, sha256sum, customer):
+        """Returns INodes by SHA-256 checksum match"""
+        for inode in cls.by_group(customer):
+            if inode.sha256sum == sha256sum:
                 yield inode
 
     @classmethod
@@ -318,7 +368,7 @@ class Inode(module_model('fs')):
         else:
             return {}
 
-    def readable_by(self, account):
+    def _readable_by(self, account):
         """Determines whether this inode is
         readable by a certain account
         """
@@ -335,7 +385,7 @@ class Inode(module_model('fs')):
         else:
             return False
 
-    def writable_by(self, account):
+    def _writable_by(self, account):
         """Determines whether this inode is
         writable by a certain account
         """
@@ -350,7 +400,7 @@ class Inode(module_model('fs')):
         else:
             return False
 
-    def executable_by(self, account):
+    def _executable_by(self, account):
         """Determines whether this inode is
         executable by a certain account
         """
@@ -364,3 +414,28 @@ class Inode(module_model('fs')):
             return True
         else:
             return False
+
+    def _parents_readable(self, account):
+        """Determines whether the parents of the INode are readable"""
+        parent = self.inode.parent
+
+        while parent is not None:
+            if parent.isdir:
+                if not parent._executable_by(account):
+                    return False
+            else:
+                raise ConsistencyError(parent)
+
+        return True
+
+    def readable_by(self, account):
+        """Determines whether the account can read this Inode"""
+        return self._readable_by(account) and self._parents_readable(account)
+
+    def writable_by(self, account):
+        """Determines whether the account can write this Inode"""
+        return self._writable_by(account) and self._parents_readable(account)
+
+    def executable_by(self, account):
+        """Determines whether the account can execute this Inode"""
+        return self._executable_by(account) and self._parents_readable(account)
