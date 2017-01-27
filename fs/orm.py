@@ -1,6 +1,5 @@
 """ORM models"""
 
-from os.path import normpath
 from contextlib import suppress
 
 from peewee import DoesNotExist, ForeignKeyField, IntegerField, CharField
@@ -10,8 +9,8 @@ from homeinfo.lib.fs import FileMode
 from filedb import FileError, FileClient
 
 from his.orm import module_model, Account
-from .errors import NotADirectory, NotAFile, NoSuchNode, ReadError, \
-    WriteError, DirectoryNotEmpty
+from .errors import NotADirectory, NotAFile, ReadError, WriteError, \
+    DirectoryNotEmpty
 
 __all__ = [
     'FileNotFound',
@@ -59,76 +58,26 @@ class Inode(module_model('fs')):
     file = IntegerField(null=True, default=None)
 
     @classmethod
-    def by_owner(cls, owner):
-        """Yields inodes of the respective owner"""
-        return cls.select().where(cls.owner == owner)
-
-    @classmethod
-    def by_group(cls, group):
-        """Yieds inodes of the respective group"""
-        return cls.select().where(cls.group == group)
-
-    @classmethod
-    def by_ownership(cls, owner, group):
+    def of(cls, owner=None, group=None):
         """Yields inodes that are owned by
         the respective owner and group
         """
-        for inode in cls.by_owner:
-            if inode.group == group:
-                yield inode
-
-    @classmethod
-    def from_path(cls, path, customer):
-        """Returns the INode handler from the respective path"""
-        parent = cls.root_for(group=customer)
-        processed_path = ['']
-
-        for inode in path.split(cls.PATHSEP):
-            if not inode:
-                continue
-            else:
-                processed_path.append(inode)
-
-                try:
-                    parent = cls.get(
-                        (cls.group == customer) &
-                        (cls.parent == parent) &
-                        (cls.name == inode))
-                except DoesNotExist:
-                    raise FileNotFound(cls.PATHSEP.join(processed_path))
-
-        return parent
-
-    @classmethod
-    def by_sha256(cls, sha256sum, customer):
-        """Returns INodes by SHA-256 checksum match"""
-        for inode in cls.by_group(customer):
-            if inode.sha256sum == sha256sum:
-                yield inode
-
-    @classmethod
-    def getrel(cls, name, parent, owner, group):
-        """Get inode by relative properties."""
-        if parent is None:
-            return cls.get(
-                (cls._name == name) &
-                (cls.parent >> None) &
-                (cls.owner == owner) &
-                (cls.group == group))
+        if owner is None and group is None:
+            raise ValueError('Must specify owner and/or group')
+        elif owner is not None and group is None:
+            return cls.select().where(cls.owner == owner)
+        elif owner is None and group is not None:
+            return cls.select().where(cls.group == group)
         else:
-            return cls.get(
-                (cls._name == name) &
-                (cls.parent == parent) &
+            return cls.select().where(
                 (cls.owner == owner) &
                 (cls.group == group))
 
     @classmethod
-    def root_for(cls, owner=None, group=None):
+    def root_of(cls, owner=None, group=None):
         """Yields elements of the respective root folder"""
         if owner is None and group is None:
-            return cls.get(
-                (cls.file >> None) &
-                (cls.parent >> None))
+            raise ValueError('Must specify owner and/or group')
         elif owner is not None and group is None:
             return cls.get(
                 (cls.file >> None) &
@@ -147,42 +96,36 @@ class Inode(module_model('fs')):
                 (cls.group == group))
 
     @classmethod
-    def _node_path(cls, revpath, owner=None, group=None):
-        """Finds records by reversed path nodes"""
-        parent = cls.root_for(owner=owner, group=group)
-        path = [parent]
-
-        while revpath:
-            node = revpath.pop()
-
-            try:
-                parent = cls.getrel(node, parent, owner, group)
-            except DoesNotExist:
-                raise NoSuchNode() from None
-            else:
-                # Bail out if the node is a file
-                # but is expected to have children.
-                if parent.isfile and revpath:
-                    raise NotADirectory() from None
-                else:
-                    path.append(parent)
-
-        return path
+    def by_sha256sum(cls, sha256sum, owner=None, group=None):
+        """Returns INodes by SHA-256 checksum match"""
+        for inode in cls.of(owner=owner, group=group):
+            if inode.sha256sum == sha256sum:
+                yield inode
 
     @classmethod
-    def node_path(cls, path, owner=None, group=None):
-        """Yields files and directories by the respective path"""
-        if not path:
-            revpath = []
-        else:
-            normed_path = normpath(path)
+    def by_path(cls, path, owner=None, group=None):
+        """Returns the Inode under the respective path"""
+        inode = cls.root_of(owner=owner, group=group)
 
-            if normed_path == cls.PATHSEP:
-                revpath = []
-            else:
-                revpath = list(reversed(normed_path.split(cls.PATHSEP)))
+        for node in path.split(cls.PATHSEP):
+            if node:
+                if owner is None and group is None:
+                    raise ValueError('Must specify owner and/or group')
+                elif owner is None and group is not None:
+                    inode = cls.get(
+                        (cls.group == group) &
+                        (cls.parent == inode))
+                elif owner is not None and group is None:
+                    inode = cls.get(
+                        (cls.owner == owner) &
+                        (cls.parent == inode))
+                else:
+                    inode = cls.get(
+                        (cls.group == group) &
+                        (cls.owner == owner) &
+                        (cls.parent == inode))
 
-        return cls._node_path(revpath, owner=owner, group=group)
+        return inode
 
     @property
     def name(self):

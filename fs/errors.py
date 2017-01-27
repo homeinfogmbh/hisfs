@@ -8,6 +8,7 @@ __all__ = [
     'NotADirectory',
     'NotAFile',
     'NoSuchNode',
+    'ParentDirDoesNotExist',
     'ReadError',
     'WriteError',
     'DirectoryNotEmpty',
@@ -55,12 +56,21 @@ class NotAFile(FileSystemError):
 
 
 class NoSuchNode(FileSystemError):
-    """Indicates that the respective path node does not exists"""
+    """Indicates that the respective path node does not exist"""
 
     STATUS = 404
     LOCALE = {
         Language.DE_DE: 'Knoten nicht vorhanden.',
         Language.EN_US: 'Not such node.'}
+
+
+class ParentDirDoesNotExist(FileSystemError):
+    """Indicates that the requested node's parent does not exist"""
+
+    STATUS = 404
+    LOCALE = {
+        Language.DE_DE: 'Elternordner nicht vorhanden.',
+        Language.EN_US: 'Parent directory does not exist.'}
 
 
 class ReadError(FileSystemError):

@@ -3,18 +3,18 @@
 from os.path import dirname, basename
 from contextlib import suppress
 
-from homeinfo.crm import Customer
+from peewee import DoesNotExist
+
 from homeinfo.lib.wsgi import OK, JSON, Binary
 from filedb import FileError
 
 from his.api.errors import NotAnInteger
 from his.api.handlers import AuthorizedService
-from his.orm import Account
 
 from .errors import NotADirectory, NoSuchNode, DeletionError, \
     NoFileNameSpecified, InvalidFileName, FileExists, FileCreated, \
-    FileDeleted, FileUnchanged, NotExecutable, NotWritable, NotReadable, \
-    RootDeletionError
+    FileDeleted, FileUnchanged, NotWritable, NotReadable, RootDeletionError, \
+    ParentDirDoesNotExist
 from .orm import Inode
 
 
@@ -52,54 +52,23 @@ class FS(AuthorizedService):
                 raise NotAnInteger('mode', mode) from None
 
     @property
-    def owner(self):
-        """Returns the respective owner"""
-        try:
-            owner = self.query['owner']
-        except KeyError:
-            return self.account
-        else:
-            return Account.find(owner)
-
-    @property
-    def group(self):
-        """Returns the respective group"""
-        try:
-            group = self.query['group']
-        except KeyError:
-            return self.customer
-        else:
-            return Customer.find(group)
-
-    @property
     def recursive(self):
         """Returns the recursive flag"""
-        return self.query.get('recursive', False)
-
-    def node_path(self, path):
-        """Returns the inode for the respective path"""
-        return Inode.node_path(path, owner=self.owner, group=self.group)
+        return
 
     def get(self):
         """Retrieves (a) file(s)"""
         if self.resource is None:
-            root = Inode.root_for(owner=self.owner, group=self.group)
+            root = Inode.root_for(owner=self.account, group=self.customer)
             return JSON(root.dict_for(self.account))
         else:
-            *parents, inode = self.node_path(self.resource)
-
-            for parent in parents:
-                if not parent.executable_by(self.account):
-                    raise NotExecutable() from None
-
-            if inode.isdir:
-                if inode.executable_by(self.account):
-                    if inode.readable_by(self.account):
-                        return JSON(inode.to_dict())
-                    else:
-                        raise NotReadable() from None
-                else:
-                    raise NotExecutable() from None
+            try:
+                inode = Inode.by_path(
+                    self.resource,
+                    owner=self.account,
+                    group=self.group)
+            except DoesNotExist:
+                raise NoSuchNode() from None
             else:
                 if inode.readable_by(self.account):
                     with suppress(KeyError):
@@ -122,16 +91,22 @@ class FS(AuthorizedService):
             raise NoFileNameSpecified()
         else:
             try:
-                self.node_path(self.resource)
-            except NoSuchNode:
-                *parents, parent = self.node_path(dirname(self.resource))
+                Inode.by_path(
+                    self.resource,
+                    owner=self.account,
+                    group=self.group)
+            except DoesNotExist:
+                parent = dirname(self.resource)
 
-                for parent_ in parents:
-                    if not parent_.executable_by(self.account):
-                        raise NotExecutable() from None
-
-                if parent.isdir:
-                    if parent.executable_by(self.account):
+                try:
+                    parent = Inode.by_path(
+                        parent,
+                        owner=self.account,
+                        group=self.group)
+                except DoesNotExist:
+                    raise ParentDirDoesNotExist() from None
+                else:
+                    if parent.isdir:
                         if parent.writable_by(self.account):
                             inode = Inode()
 
@@ -153,34 +128,36 @@ class FS(AuthorizedService):
                         else:
                             raise NotWritable() from None
                     else:
-                        raise NotExecutable() from None
-                else:
-                    raise NotADirectory() from None
+                        raise NotADirectory() from None
             else:
                 raise FileExists() from None
 
     def delete(self):
         """Deletes a file"""
-        *parents, inode = self.node_path(self.resource)
-
-        for parent in parents:
-            if not parent.executable_by(self.account):
-                raise NotExecutable() from None
-
-        try:
-            parent = parents[-1]
-        except IndexError:
-            raise RootDeletionError() from None
+        if self.resource is None:
+            raise NoFileNameSpecified()
         else:
-            if parent.writable_by(self.account):
-                try:
-                    inode.remove(recursive=False)
-                except FileError:
-                    raise DeletionError() from None
-                else:
-                    return FileDeleted()
+            try:
+                inode = Inode.by_path(
+                    self.resource,
+                    owner=self.account,
+                    group=self.group)
+            except DoesNotExist:
+                raise NoSuchNode() from None
             else:
-                raise NotWritable() from None
+                if inode.parent is None:
+                    raise RootDeletionError() from None
+                else:
+                    if inode.parent.writable_by(self.account):
+                        try:
+                            inode.remove(recursive=self.query.get(
+                                'recursive', False))
+                        except FileError:
+                            raise DeletionError() from None
+                        else:
+                            return FileDeleted()
+                    else:
+                        raise NotWritable() from None
 
     def options(self):
         """Returns options information"""
