@@ -9,7 +9,7 @@ from homeinfo.lib.fs import FileMode
 from filedb import FileError, FileClient
 
 from his.orm import module_model, Account
-from .errors import NotADirectory, NotAFile, ReadError, WriteError, \
+from .messages import NotADirectory, NotAFile, ReadError, WriteError, \
     DirectoryNotEmpty
 
 __all__ = [

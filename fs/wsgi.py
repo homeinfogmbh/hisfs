@@ -8,10 +8,10 @@ from peewee import DoesNotExist
 from homeinfo.lib.wsgi import OK, JSON, Binary
 from filedb import FileError
 
-from his.api.errors import NotAnInteger
+from his.api.messages import NotAnInteger
 from his.api.handlers import AuthorizedService
 
-from .errors import NotADirectory, NoSuchNode, DeletionError, \
+from .messages import NotADirectory, NoSuchNode, DeletionError, \
     NoFileNameSpecified, InvalidFileName, FileExists, FileCreated, \
     FileDeleted, FileUnchanged, NotWritable, NotReadable, RootDeletionError, \
     ParentDirDoesNotExist

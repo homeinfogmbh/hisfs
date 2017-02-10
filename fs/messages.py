@@ -1,6 +1,6 @@
 """Errors of the FS"""
 
-from his.api.errors import HISMessage
+from his.api.messages import HISMessage
 from his.api.locale import Language
 
 __all__ = [
