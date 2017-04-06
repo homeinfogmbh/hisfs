@@ -5,7 +5,7 @@ from contextlib import suppress
 
 from peewee import DoesNotExist
 
-from homeinfo.lib.wsgi import OK, JSON, Binary
+from wsgilib import OK, JSON, Binary
 from filedb import FileError
 
 from his.api.messages import NotAnInteger

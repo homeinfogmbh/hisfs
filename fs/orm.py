@@ -5,7 +5,7 @@ from contextlib import suppress
 from peewee import DoesNotExist, ForeignKeyField, IntegerField, CharField
 
 from homeinfo.crm import Customer
-from homeinfo.lib.fs import FileMode
+from vfslib import FileMode
 from filedb import FileError, FileClient
 
 from his.orm import module_model, Account
