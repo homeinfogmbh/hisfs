@@ -1,7 +1,6 @@
 """Errors of the FS"""
 
-from configparser import ConfigParser
-from his.api.messages import HISMessage
+from his.api.messages import locales, HISMessage
 
 __all__ = [
     'FileSystemError',
@@ -27,11 +26,11 @@ __all__ = [
     'RootDeletionError']
 
 
+@locales('/etc/his.d/locale/fs.ini')
 class FileSystemError(HISMessage):
     """Indicates errors within the file system"""
 
-    LOCALE = ConfigParser()
-    LOCALE.read('/etc/his.d/locale/fs.ini')
+    pass
 
 
 class NotADirectory(FileSystemError):
