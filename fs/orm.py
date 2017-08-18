@@ -2,20 +2,41 @@
 
 from contextlib import suppress
 
-from peewee import DoesNotExist, ForeignKeyField, IntegerField, CharField
+from peewee import DoesNotExist, Model, PrimaryKeyField, ForeignKeyField, \
+    IntegerField, CharField
 
 from homeinfo.crm import Customer
+from peeweeplus import MySQLDatabase
 from vfslib import FileMode
 from filedb import FileError, FileClient
 
-from his.orm import module_model, Account
+from his.orm import Account
 from .messages import NotADirectory, NotAFile, ReadError, WriteError, \
     DirectoryNotEmpty
+from .config import config
 
 __all__ = [
     'FileNotFound',
     'ConsistencyError',
     'Inode']
+
+
+database = MySQLDatabase(
+    config['db']['db'],
+    host=config['db']['host'],
+    user=config['db']['user'],
+    passwd=config['db']['passwd'],
+    closing=True)
+
+
+class FSModel(Model):
+    """Basic immobit model"""
+
+    id = PrimaryKeyField()
+
+    class Meta:
+        database = database
+        schema = database.database
 
 
 class FileNotFound(Exception):
@@ -44,7 +65,7 @@ def root(inodes):
             yield inode
 
 
-class Inode(module_model('fs')):
+class Inode(FSModel):
     """Inode database model for the virtual filesystem"""
 
     PATHSEP = '/'
