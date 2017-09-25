@@ -41,7 +41,7 @@ class FS(AuthorizedService):
             mode = self.query['mode']
         except KeyError:
             # Return default modes
-            if self.data:
+            if self.data.bytes:
                 return 0o644
             else:
                 return 0o755
@@ -119,8 +119,8 @@ class FS(AuthorizedService):
                                 inode.group = self.customer
                                 inode.parent = parent
 
-                                if self.data:
-                                    inode.data = self.data
+                                if self.data.bytes:
+                                    inode.data = self.data.bytes
 
                                 inode.mode = self.mode
                                 inode.save()
