@@ -1,4 +1,4 @@
-"""File management module"""
+"""File management module."""
 
 from os.path import dirname, basename
 from contextlib import suppress
@@ -22,7 +22,7 @@ __all__ = ['FS']
 
 
 class FS(AuthorizedService):
-    """Service that manages files"""
+    """Service that manages files."""
 
     NODE = 'fs'
     NAME = 'FileSystem'
@@ -31,7 +31,7 @@ class FS(AuthorizedService):
 
     @property
     def sha256sum(self):
-        """Returns the specified SHA-256 checksum"""
+        """Returns the specified SHA-256 checksum."""
         return self.environ['HTTP_IF_NONE_MATCH']
 
     @property
@@ -43,8 +43,8 @@ class FS(AuthorizedService):
             # Return default modes
             if self.data.bytes:
                 return 0o644
-            else:
-                return 0o755
+
+            return 0o755
         else:
             try:
                 return int(mode)
@@ -53,11 +53,11 @@ class FS(AuthorizedService):
 
     @property
     def recursive(self):
-        """Returns the recursive flag"""
+        """Returns the recursive flag."""
         return
 
     def get(self):
-        """Retrieves (a) file(s)"""
+        """Retrieves (a) file(s)."""
         if self.resource is None:
             root = Inode.root_for(owner=self.account, group=self.customer)
             return JSON(root.dict_for(self.account))
@@ -80,13 +80,13 @@ class FS(AuthorizedService):
 
                     if self.query.get('sha256sum', False):
                         return OK(inode.sha256sum)
-                    else:
-                        return Binary(inode.data)
-                else:
-                    raise NotReadable() from None
+
+                    return Binary(inode.data)
+
+                raise NotReadable() from None
 
     def post(self):
-        """Adds new files"""
+        """Adds new files."""
         if self.resource is None:
             raise NoFileNameSpecified()
         else:
@@ -125,15 +125,15 @@ class FS(AuthorizedService):
                                 inode.mode = self.mode
                                 inode.save()
                                 return FileCreated()
-                        else:
-                            raise NotWritable() from None
-                    else:
-                        raise NotADirectory() from None
+
+                        raise NotWritable() from None
+
+                    raise NotADirectory() from None
             else:
                 raise FileExists() from None
 
     def delete(self):
-        """Deletes a file"""
+        """Deletes a file."""
         if self.resource is None:
             raise NoFileNameSpecified()
         else:
@@ -147,18 +147,18 @@ class FS(AuthorizedService):
             else:
                 if inode.parent is None:
                     raise RootDeletionError() from None
-                else:
-                    if inode.parent.writable_by(self.account):
-                        try:
-                            inode.remove(recursive=self.query.get(
-                                'recursive', False))
-                        except FileError:
-                            raise DeletionError() from None
-                        else:
-                            return FileDeleted()
+
+                if inode.parent.writable_by(self.account):
+                    try:
+                        inode.remove(recursive=self.query.get(
+                            'recursive', False))
+                    except FileError:
+                        raise DeletionError() from None
                     else:
-                        raise NotWritable() from None
+                        return FileDeleted()
+
+                raise NotWritable() from None
 
     def options(self):
-        """Returns options information"""
+        """Returns options information."""
         return OK()

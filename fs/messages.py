@@ -1,4 +1,4 @@
-"""Errors of the FS"""
+"""Errors of the FS."""
 
 from his.api.messages import locales, HISMessage
 
@@ -28,14 +28,14 @@ __all__ = [
 
 @locales('/etc/his.d/locale/fs.ini')
 class FileSystemError(HISMessage):
-    """Indicates errors within the file system"""
+    """Indicates errors within the file system."""
 
     pass
 
 
 class NotADirectory(FileSystemError):
     """Indicates that an inode is not a
-    directory but was expected to be one
+    directory but was expected to be one.
     """
 
     STATUS = 406
@@ -43,117 +43,117 @@ class NotADirectory(FileSystemError):
 
 class NotAFile(FileSystemError):
     """Indicates that an inode is not a
-    file but was expected to be one
+    file but was expected to be one.
     """
 
     STATUS = 406
 
 
 class NoSuchNode(FileSystemError):
-    """Indicates that the respective path node does not exist"""
+    """Indicates that the respective path node does not exist."""
 
     STATUS = 404
 
 
 class ParentDirDoesNotExist(FileSystemError):
-    """Indicates that the requested node's parent does not exist"""
+    """Indicates that the requested node's parent does not exist."""
 
     STATUS = 404
 
 
 class ReadError(FileSystemError):
-    """Indicates that no data could be read from filedb"""
+    """Indicates that no data could be read from filedb."""
 
     STATUS = 500
 
 
 class WriteError(FileSystemError):
-    """Indicates that no data could be written to filedb"""
+    """Indicates that no data could be written to filedb."""
 
     STATUS = 500
 
 
 class DirectoryNotEmpty(FileSystemError):
     """Indicates that the directory could
-    not be deleted because it is not empty
+    not be deleted because it is not empty.
     """
 
     STATUS = 400
 
 
 class DeletionError(FileSystemError):
-    """Indicates that an inode could not be deleted"""
+    """Indicates that an inode could not be deleted."""
 
     STATUS = 500
 
 
 class NoFileNameSpecified(HISMessage):
-    """Indicates that no file name was provided"""
+    """Indicates that no file name was provided."""
 
     STATUS = 400
 
 
 class InvalidFileName(HISMessage):
-    """Indicates that the given file name is invalid"""
+    """Indicates that the given file name is invalid."""
 
     STATUS = 400
 
 
 class NoDataProvided(HISMessage):
-    """Indicates that no data has been provided"""
+    """Indicates that no data has been provided."""
 
     STATUS = 400
 
 
 class FileExists(HISMessage):
-    """Indicates that the file already exists"""
+    """Indicates that the file already exists."""
 
     STATUS = 409
 
 
 class FileCreated(HISMessage):
-    """Indicates that the file was successfully created"""
+    """Indicates that the file was successfully created."""
 
     STATUS = 201
 
 
 class FileUpdated(HISMessage):
-    """Indicates that the file was successfully updated"""
+    """Indicates that the file was successfully updated."""
 
     STATUS = 200
 
 
 class FileDeleted(HISMessage):
-    """Indicates that the file was successfully deleted"""
+    """Indicates that the file was successfully deleted."""
 
     STATUS = 200
 
 
 class FileUnchanged(HISMessage):
-    """Indicates that the file was not changed"""
+    """Indicates that the file was not changed."""
 
     STATUS = 200
 
 
 class NotExecutable(HISMessage):
-    """Indicates that the inode is not executable"""
+    """Indicates that the inode is not executable."""
 
     STATUS = 403
 
 
 class NotWritable(HISMessage):
-    """Indicates that the inode is not writable"""
+    """Indicates that the inode is not writable."""
 
     STATUS = 403
 
 
 class NotReadable(HISMessage):
-    """Indicates that the inode is not writable"""
+    """Indicates that the inode is not writable."""
 
     STATUS = 403
 
 
 class RootDeletionError(HISMessage):
-    """Indicates that the root inode was attempted to be deleted"""
+    """Indicates that the root inode was attempted to be deleted."""
 
     STATUS = 403
