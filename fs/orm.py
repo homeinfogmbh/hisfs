@@ -7,9 +7,8 @@ from peewee import DoesNotExist, Model, PrimaryKeyField, ForeignKeyField, \
 
 from homeinfo.crm import Customer
 from vfslib import FileMode
-from filedb import FileError
+from filedb import FileError, add, get, delete, sha256sum, mimetype, size
 
-from his.config import FILE_CLIENT
 from his.orm import his_db, Account
 from .messages import NotADirectory, NotAFile, ReadError, WriteError, \
     DirectoryNotEmpty
@@ -199,7 +198,7 @@ class Inode(FSModel):
             raise NotAFile()
 
         try:
-            return FILE_CLIENT.get(self.file)
+            return get(self.file)
         except FileError:
             raise ReadError()
 
@@ -210,12 +209,12 @@ class Inode(FSModel):
             raise NotAFile()
 
         try:
-            file_id = FILE_CLIENT.add(data)
+            file_id = add(data)
         except FileError:
             raise WriteError()
         else:
             with suppress(FileError):
-                FILE_CLIENT.delete(self.file)
+                delete(self.file)
 
             self.file = file_id
 
@@ -226,7 +225,7 @@ class Inode(FSModel):
             raise NotAFile()
 
         try:
-            return FILE_CLIENT.sha256sum(self.file)
+            return sha256sum(self.file)
         except FileError:
             raise ReadError() from None
 
@@ -237,7 +236,7 @@ class Inode(FSModel):
             raise NotAFile()
 
         try:
-            return FILE_CLIENT.mimetype(self.file)
+            return mimetype(self.file)
         except FileError:
             raise ReadError() from None
 
@@ -248,7 +247,7 @@ class Inode(FSModel):
             raise NotAFile()
 
         try:
-            return FILE_CLIENT.size(self.file)
+            return size(self.file)
         except FileError:
             raise ReadError() from None
 
@@ -279,7 +278,7 @@ class Inode(FSModel):
             raise DirectoryNotEmpty()
 
         if self.file is not None:
-            FILE_CLIENT.delete(self.file)
+            delete(self.file)
 
         self.delete_instance()
 
