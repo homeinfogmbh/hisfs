@@ -22,8 +22,18 @@ __all__ = ['FS']
 
 
 @service('fs')
+@routed('/fs/[id:int]')
 class FS(AuthorizedService):
     """Service that manages files."""
+
+    @property
+    @lru_cache(maxsize=1)
+    def inode(self):
+        """Returns the requested Inode without any permission checks."""
+        try:
+            return Inode.get(Inode.id == self.vars['id'])
+        except DoesNotExist:
+            raise NoSuchNode() from None
 
     @property
     def sha256sum(self):
@@ -36,39 +46,34 @@ class FS(AuthorizedService):
         try:
             mode = self.query['mode']
         except KeyError:
-            # Return default modes
+            # Return default modes.
             if self.data.bytes:
                 return 0o644
 
             return 0o755
-        else:
-            try:
-                return int(mode)
-            except (TypeError, ValueError):
-                raise NotAnInteger('mode', mode) from None
+
+        try:
+            return int(mode)
+        except (TypeError, ValueError):
+            raise NotAnInteger('mode', mode) from None
 
     @property
     def recursive(self):
         """Returns the recursive flag."""
         return
 
-    @property
-    def inode(self):
-        """Returns the respective INode."""
-        return Inode.by_path(
-            self.resource, owner=self.account, group=self.group)
+    def root(self):
+        """Yields root directory contents."""
+        return Inode.root_for(owner=self.account, group=self.customer)
+
+    def list_root(self):
+        """Lists the root directoy."""
+        return JSON([inode.dict_for(self.account) for inode in self.root])
 
     def get(self):
         """Retrieves (a) file(s)."""
-        if self.resource is None:
-            root = Inode.root_for(owner=self.account, group=self.customer)
-            return JSON(root.dict_for(self.account))
-
-        try:
-            inode = Inode.by_path(
-                self.resource, owner=self.account, group=self.group)
-        except DoesNotExist:
-            raise NoSuchNode() from None
+        if self.vars['id'] is None:
+            return self.list_root()
 
         if inode.readable_by(self.account):
             with suppress(KeyError):
@@ -133,7 +138,8 @@ class FS(AuthorizedService):
             raise NoFileNameSpecified()
 
         try:
-            inode = Inode.by_path(self.resource, owner=self.account, group=self.group)
+            inode = Inode.by_path(
+                self.resource, owner=self.account, group=self.group)
         except DoesNotExist:
             raise NoSuchNode() from None
 
