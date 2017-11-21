@@ -3,20 +3,17 @@
 from contextlib import suppress
 
 from peewee import DoesNotExist, Model, PrimaryKeyField, ForeignKeyField, \
-    IntegerField, CharField
+    IntegerField, SmallIntegerField, CharField
 
 from homeinfo.crm import Customer
-from vfslib import FileMode
+from vfslib import PosixMode
 from filedb import FileError, add, get, delete, sha256sum, mimetype, size
 
 from his.orm import his_db, Account
 from .messages import NotADirectory, NotAFile, ReadError, WriteError, \
     DirectoryNotEmpty
 
-__all__ = [
-    'FileNotFound',
-    'ConsistencyError',
-    'Inode']
+__all__ = ['Inode']
 
 
 DATABASE = his_db('fs')
@@ -33,44 +30,18 @@ class FSModel(Model):
         schema = DATABASE.database
 
 
-class FileNotFound(Exception):
-    """Indicates that the respective file was not found."""
-
-    def __init__(self, path):
-        super().__init__(path)
-        self.path = path
-
-
-class ConsistencyError(Exception):
-    """Indicates that the consistency of
-    the file system has been compromised.
-    """
-
-    def __init__(self, inode):
-        super().__init__(inode)
-        self.inode = inode
-
-
-def root(inodes):
-    """Yields inodes that are root directories."""
-
-    for inode in inodes:
-        if inode.isdir and inode.root:
-            yield inode
-
-
 class Inode(FSModel):
     """Inode database model for the virtual filesystem."""
 
     parent = ForeignKeyField('self', db_column='parent', null=True)
-    _name = CharField(255, db_column='name')
+    name_ = CharField(255, db_column='name')
     owner = ForeignKeyField(Account, db_column='owner')
     group = ForeignKeyField(Customer, db_column='group')
-    _mode = IntegerField(db_column='mode')  # SMALLINT field!
+    mode_ = SmallIntegerField(db_column='mode')
     file = IntegerField(null=True, default=None)
 
     @classmethod
-    def of(cls, owner=None, group=None):
+    def by_owner(cls, owner=None, group=None):
         """Yields inodes that are owned by
         the respective owner and group.
         """
@@ -84,59 +55,79 @@ class Inode(FSModel):
         return cls.select().where((cls.owner == owner) & (cls.group == group))
 
     @classmethod
-    def root_of(cls, owner=None, group=None):
+    def root_for(cls, owner=None, group=None):
         """Yields elements of the respective root folder."""
         if owner is None and group is None:
-            raise ValueError('Must specify owner and/or group.')
+            return cls.select().where(cls.parent >> None)
         elif owner is not None and group is None:
-            return cls.get(
-                (cls.file >> None) & (cls.parent >> None) &
-                (cls.owner == owner))
+            return cls.select().where(
+                (cls.parent >> None) & (cls.owner == owner))
         elif owner is None and group is not None:
-            return cls.get(
-                (cls.file >> None) & (cls.parent >> None) &
-                (cls.group == group))
+            return cls.select().where(
+                (cls.parent >> None) & (cls.group == group))
 
-        return cls.get(
-            (cls.file >> None) & (cls.parent >> None) & (cls.owner == owner) &
-            (cls.group == group))
+        return cls.select().where(
+            (cls.parent >> None) & (cls.owner == owner) & (cls.group == group))
 
     @classmethod
     def by_sha256sum(cls, sha256sum, owner=None, group=None):
         """Returns INodes by SHA-256 checksum match."""
-        for inode in cls.of(owner=owner, group=group):
+        for inode in cls.by_owner(owner=owner, group=group):
             if inode.sha256sum == sha256sum:
                 yield inode
 
     @classmethod
+    def by_path_nodes(cls, nodes, owner=None, group=None):
+        """Returns the respective Inode by the given node list."""
+        if owner is None and group is None:
+            raise ValueError('Must specify owner and/or group.')
+
+        parent = None
+
+        for node in nodes:
+            if parent is None:
+                if owner is None and group is not None:
+                    parent = cls.get(
+                        (cls.group == group) & (cls.parent >> None)
+                        & (cls.name == node))
+                elif owner is not None and group is None:
+                    parent = cls.get(
+                        (cls.owner == owner) & (cls.parent >> None)
+                        & (cls.name == node))
+                else:
+                    parent = cls.get(
+                        (cls.group == group) & (cls.owner == owner)
+                        & (cls.parent >> None) & (cls.name == node))
+            else:
+                if owner is None and group is not None:
+                    parent = cls.get(
+                        (cls.group == group) & (cls.parent == parent)
+                        & (cls.name == node))
+                elif owner is not None and group is None:
+                    parent = cls.get(
+                        (cls.owner == owner) & (cls.parent == parent)
+                        & (cls.name == node))
+                else:
+                    parent = cls.get(
+                        (cls.group == group) & (cls.owner == owner)
+                        & (cls.parent == parent) & (cls.name == node))
+
+        return parent
+
+    @classmethod
     def by_path(cls, path, owner=None, group=None):
         """Returns the Inode under the respective path."""
-        inode = cls.root_of(owner=owner, group=group)
+        root, *nodes = path.parts
 
-        for node in path.split(PATHSEP):
-            if node:
-                if owner is None and group is None:
-                    raise ValueError('Must specify owner and/or group.')
-                elif owner is None and group is not None:
-                    inode = cls.get(
-                        (cls.group == group) &
-                        (cls.parent == inode))
-                elif owner is not None and group is None:
-                    inode = cls.get(
-                        (cls.owner == owner) &
-                        (cls.parent == inode))
-                else:
-                    inode = cls.get(
-                        (cls.group == group) &
-                        (cls.owner == owner) &
-                        (cls.parent == inode))
+        if root != PATHSEP:
+            raise ValueError('Invalid root node: "{}".'.format(root))
 
-        return inode
+        return cls.by_path_nodes(nodes, owner=owner, group=group)
 
     @property
     def name(self):
         """Returns the inode's name."""
-        return self._name
+        return self.name_
 
     @name.setter
     def name(self, name):
@@ -147,17 +138,17 @@ class Inode(FSModel):
             raise ValueError('File name must not contain "{}".'.format(
                 PATHSEP))
         else:
-            self._name = name
+            self.name_ = name
 
     @property
     def mode(self):
         """Returns the file mode."""
-        return FileMode(self._mode)
+        return PosixMode.from_int(self.mode_)
 
     @mode.setter
     def mode(self, mode):
         """Sets the file mode."""
-        self._mode = int(mode)
+        self.mode_ = int(mode)
 
     @property
     def revpath(self):
@@ -169,12 +160,12 @@ class Inode(FSModel):
             yield parent.name
             parent = parent.parent
 
-        yield ''    # Root directory
+        yield ''    # Root directory.
 
     @property
     def path(self):
         """Returns the path to the inode."""
-        return PATHSEP.join(reversed(self.revpath))
+        return PATHSEP.join(reversed(tuple(self.revpath)))
 
     @property
     def root(self):
@@ -273,47 +264,54 @@ class Inode(FSModel):
         try:
             self.__class__.get(self.__class__.parent == self)
         except DoesNotExist:
-            pass
-        else:
-            raise DirectoryNotEmpty()
+            if self.file is not None:
+                delete(self.file)
 
-        if self.file is not None:
-            delete(self.file)
+            self.delete_instance()
 
-        self.delete_instance()
+        raise DirectoryNotEmpty()
 
     def to_dict(self, children=True, mimetype=True, size=True):
         """Converts the inode into a dictionary."""
-        result = {
+        dictionary = {
             'name': self.name,
             'owner': repr(self.owner),
             'group': repr(self.group),
-            'mode': str(self.mode)}
+            'mode': str(self.mode),
+            'directory': self.isdir}
 
         if self.isdir:
             if children:
-                result['children'] = [c.name for c in self.children]
+                dictionary['children'] = list(self.lsdir_dict(validate=False))
         else:
             if mimetype:
-                result['mimetype'] = self.mimetype
+                dictionary['mimetype'] = self.mimetype
 
             if size:
-                result['size'] = self.size
+                dictionary['size'] = self.size
 
-        return result
+        return dictionary
+
+    def lsdir_dict(self, validate=True):
+        """List directory contents."""
+        if validate and not self.isdir:
+            raise NotADirectory()
+
+        for child in self.children:
+            yield child.to_dict(children=False, mimetype=False, size=False)
 
     def dict_for(self, account):
         """Converts the inode into a dictionary
         considering access permissions.
         """
         if (self.parent or self).executable_by(account):
-            fs_dict = self.to_dict(children=False)
+            dictionary = self.to_dict(children=False)
 
             if self.isdir:
-                fs_dict['children'] = [
-                    c.to_dict(account) for c in self.children]
+                dictionary['children'] = [
+                    child.to_dict(account) for child in self.children]
 
-            return fs_dict
+            return dictionary
 
         return {}
 
@@ -321,46 +319,34 @@ class Inode(FSModel):
         """Determines whether this inode is
         readable by a certain account.
         """
-        mode = self.mode
-        owner = self.owner
         return any((
             account.root,
-            mode.user.read and account == owner,
-            mode.group.read and account.customer == owner.customer,
-            mode.other.read))
+            self.mode.user.read and account == self.owner,
+            self.mode.group.read and account.customer == self.owner.customer,
+            self.mode.other.read))
 
     def _writable_by(self, account):
         """Determines whether this inode is
         writable by a certain account.
         """
-        mode = self.mode
-        owner = self.owner
         return any((
-            mode.user.write and account == owner,
-            mode.group.write and account.customer == owner.customer,
-            mode.other.write))
+            self.mode.user.write and account == self.owner,
+            self.mode.group.write and account.customer == self.owner.customer,
+            self.mode.other.write))
 
     def _executable_by(self, account):
         """Determines whether this inode is
         executable by a certain account.
         """
-        mode = self.mode
-        owner = self.owner
         return any((
-            mode.user.execute and account == owner,
-            mode.group.execute and account.customer == owner.customer,
-            mode.other.execute))
+            self.mode.user.execute and account == self.owner,
+            self.mode.group.execute and account.customer == self.owner.customer,
+            self.mode.other.execute))
 
     def _parents_readable(self, account):
-        """Determines whether the parents of the INode are readable."""
-        parent = self.inode.parent
-
-        while parent is not None:
-            if parent.isdir:
-                if not parent._executable_by(account):
-                    return False
-            else:
-                raise ConsistencyError(parent)
+        """Determines whether the parents of the Inode are readable."""
+        if self.parent is not None:
+            return self.parent.executable_by(account)
 
         return True
 
