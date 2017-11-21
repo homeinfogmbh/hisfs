@@ -27,13 +27,42 @@ class FS(AuthorizedService):
     """Service that manages files."""
 
     @property
+    def path(self):
+        """Returns the optional path."""
+        try:
+            return self.query['path']
+        except KeyError:
+            raise NoFileNameSpecified()
+
+    @property
     @lru_cache(maxsize=1)
     def inode(self):
-        """Returns the requested Inode without any permission checks."""
+        """Returns the requested Inode."""
+        if self.vars['id'] is None:
+            try:
+                return Inode.by_path(
+                    self.path, owner=self.account, group=self.customer)
+            except NoFileNameSpecified:
+                raise NoInodeSpecified() from None
+            except DoesNotExist:
+                raise NoSuchNode() from None
+
         try:
-            return Inode.get(Inode.id == self.vars['id'])
+            return Inode.by_id(
+                self.vars['id'], owner=self.account, group=self.customer)
         except DoesNotExist:
             raise NoSuchNode() from None
+
+    @property
+    @lru_cache(maxsize=1)
+    def parent(self):
+        """Returns the parent inode."""
+        try:
+            return self.inode
+        except NoInodeSpecified:
+            return None
+        except NoSuchNode:
+            raise ParentDirDoesNotExist() from None
 
     @property
     def sha256sum(self):
@@ -70,6 +99,26 @@ class FS(AuthorizedService):
         """Lists the root directoy."""
         return JSON([inode.dict_for(self.account) for inode in self.root])
 
+    def add(self):
+        """Adds a new inode."""
+        inode = Inode()
+
+        try:
+            inode.name = self.name
+        except ValueError:
+            raise InvalidFileName()
+
+        inode.owner = self.account
+        inode.group = self.customer
+        inode.parent = self.parent
+
+        if self.data.bytes:
+            inode.data = self.data.bytes
+
+        inode.mode = self.mode
+        inode.save()
+        return FileCreated()
+
     def get(self):
         """Retrieves (a) file(s)."""
         if self.vars['id'] is None:
@@ -92,45 +141,16 @@ class FS(AuthorizedService):
 
     def post(self):
         """Adds new files."""
-        if self.resource is None:
-            raise NoFileNameSpecified()
+        if self.parent.isdir:
+            if self.parent.writable_by(self.account):
+                if self.name in (child.name for child in self.parent.children):
+                    raise FileExists() from None
 
-        try:
-            Inode.by_path(self.resource, owner=self.account, group=self.group)
-        except DoesNotExist:
-            parent = dirname(self.resource)
+                return self.add()
 
-            try:
-                parent = Inode.by_path(
-                    parent, owner=self.account, group=self.group)
-            except DoesNotExist:
-                raise ParentDirDoesNotExist() from None
+            raise NotWritable() from None
 
-            if parent.isdir:
-                if parent.writable_by(self.account):
-                    inode = Inode()
-
-                    try:
-                        inode.name = basename(self.resource)
-                    except ValueError:
-                        raise InvalidFileName()
-                    else:
-                        inode.owner = self.account
-                        inode.group = self.customer
-                        inode.parent = parent
-
-                        if self.data.bytes:
-                            inode.data = self.data.bytes
-
-                        inode.mode = self.mode
-                        inode.save()
-                        return FileCreated()
-
-                raise NotWritable() from None
-
-            raise NotADirectory() from None
-
-        raise FileExists() from None
+        raise NotADirectory() from None
 
     def delete(self):
         """Deletes a file."""
@@ -148,8 +168,7 @@ class FS(AuthorizedService):
 
         if inode.parent.writable_by(self.account):
             try:
-                inode.remove(recursive=self.query.get(
-                    'recursive', False))
+                inode.remove(recursive=self.query.get('recursive', False))
             except FileError:
                 raise DeletionError() from None
 

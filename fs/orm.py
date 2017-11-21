@@ -77,6 +77,25 @@ class Inode(FSModel):
                 yield inode
 
     @classmethod
+    def by_id(cls, ident, owner=None, group=None):
+        """Returns the respective Inode by the given ID."""
+        if owner is None and group is None:
+            raise ValueError('Must specify owner and/or group.')
+
+        if owner is None and group is not None:
+            return cls.get(
+                (cls.group == group) & (cls.parent == parent)
+                & (cls.id == ident))
+        elif owner is not None and group is None:
+            return cls.get(
+                (cls.owner == owner) & (cls.parent == parent)
+                & (cls.id == ident))
+        else:
+            return cls.get(
+                (cls.group == group) & (cls.owner == owner)
+                & (cls.parent == parent) & (cls.id == ident))
+
+    @classmethod
     def by_path_nodes(cls, nodes, owner=None, group=None):
         """Returns the respective Inode by the given node list."""
         if owner is None and group is None:
