@@ -13,6 +13,7 @@ __all__ = [
     'DirectoryNotEmpty',
     'DeletionError',
     'NoFileNameSpecified',
+    'NoInodeSpecified',
     'InvalidFileName',
     'NoDataProvided',
     'FileExists',
@@ -90,6 +91,12 @@ class DeletionError(FileSystemError):
 
 class NoFileNameSpecified(HISMessage):
     """Indicates that no file name was provided."""
+
+    STATUS = 400
+
+
+class NoInodeSpecified(HISMessage):
+    """Indicates that no Inode provided."""
 
     STATUS = 400
 

@@ -1,20 +1,20 @@
 """File management module."""
 
-from os.path import dirname, basename
+from functools import lru_cache
 from contextlib import suppress
 
 from peewee import DoesNotExist
 
-from wsgilib import OK, JSON, Binary
+from wsgilib import routed, OK, JSON, Binary
 from filedb import FileError
 
 from his.api.messages import NotAnInteger
 from his.api.handlers import service, AuthorizedService
 
 from .messages import NotADirectory, NoSuchNode, DeletionError, \
-    NoFileNameSpecified, InvalidFileName, FileExists, FileCreated, \
-    FileDeleted, FileUnchanged, NotWritable, NotReadable, RootDeletionError, \
-    ParentDirDoesNotExist
+    NoFileNameSpecified, NoInodeSpecified, InvalidFileName, FileExists, \
+    FileCreated, FileDeleted, FileUnchanged, NotWritable, NotReadable, \
+    RootDeletionError, ParentDirDoesNotExist
 from .orm import Inode
 
 
@@ -124,18 +124,18 @@ class FS(AuthorizedService):
         if self.vars['id'] is None:
             return self.list_root()
 
-        if inode.readable_by(self.account):
+        if self.inode.readable_by(self.account):
             with suppress(KeyError):
                 # Access self.sha256sum first to trigger a possible
                 # KeyError before the resource-hungry inode.sha256sum
                 # is invoked.
-                if self.sha256sum == inode.sha256sum:
+                if self.sha256sum == self.inode.sha256sum:
                     return FileUnchanged()
 
             if self.query.get('sha256sum', False):
-                return OK(inode.sha256sum)
+                return OK(self.inode.sha256sum)
 
-            return Binary(inode.data)
+            return Binary(self.inode.data)
 
         raise NotReadable() from None
 
