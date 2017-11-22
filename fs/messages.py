@@ -23,7 +23,8 @@ __all__ = [
     'NotExecutable',
     'NotWritable',
     'NotReadable',
-    'RootDeletionError']
+    'RootDeletionError',
+    'QuotaExceeded']
 
 
 @locales('/etc/his.d/locale/fs.ini')
@@ -157,3 +158,9 @@ class RootDeletionError(HISMessage):
     """Indicates that the root inode was attempted to be deleted."""
 
     STATUS = 403
+
+
+class QuotaExceeded(HISMessage):
+    """Indicates that the customer's quota has been exceeded."""
+
+    status = 403

@@ -11,13 +11,18 @@ from filedb import FileError, add, get, delete, sha256sum, mimetype, size
 
 from his.orm import his_db, Account
 from .messages import NotADirectory, NotAFile, ReadError, WriteError, \
-    DirectoryNotEmpty
+    DirectoryNotEmpty, QuotaExceeded
 
 __all__ = ['Inode']
 
 
 DATABASE = his_db('fs')
 PATHSEP = '/'
+BINARY_FACTOR = 1024
+KIBIBYTE = BINARY_FACTOR
+MEBIBYTE = BINARY_FACTOR * KIBIBYTE
+GIBIBATE = BINARY_FACTOR * MEBIBYTE
+DEFAULT_QUOTA = 5 * GIBIBATE    # 5.0 GiB.
 
 
 class FSModel(Model):
@@ -83,17 +88,12 @@ class Inode(FSModel):
             raise ValueError('Must specify owner and/or group.')
 
         if owner is None and group is not None:
-            return cls.get(
-                (cls.group == group) & (cls.parent == parent)
-                & (cls.id == ident))
+            return cls.get((cls.group == group) & (cls.id == ident))
         elif owner is not None and group is None:
-            return cls.get(
-                (cls.owner == owner) & (cls.parent == parent)
-                & (cls.id == ident))
-        else:
-            return cls.get(
-                (cls.group == group) & (cls.owner == owner)
-                & (cls.parent == parent) & (cls.id == ident))
+            return cls.get((cls.owner == owner) & (cls.id == ident))
+
+        return cls.get(
+            (cls.group == group) & (cls.owner == owner) & (cls.id == ident))
 
     @classmethod
     def by_path_nodes(cls, nodes, owner=None, group=None):
@@ -380,3 +380,47 @@ class Inode(FSModel):
     def executable_by(self, account):
         """Determines whether the account can execute this Inode."""
         return self._executable_by(account) and self._parents_readable(account)
+
+
+class CustomerQuota(FSModel):
+    """Media settings for a customer."""
+
+    customer = ForeignKeyField(Customer, db_column='customer')
+    quota = IntegerField(default=DEFAULT_QUOTA)     # Quota in bytes.
+
+    @classmethod
+    def by_customer(cls, customer):
+        """Returns the settings for the respective customer."""
+        return cls.get(cls.customer == customer)
+
+    @property
+    def files(self):
+        """Yields media file records of the respective customer."""
+        return Inode.select().where(
+                (Inode.group == self.customer) & ~(Inode.file >> None))
+
+    @property
+    def used(self):
+        """Returns used space."""
+        return sum(file.size for file in self.files)
+
+    @property
+    def free(self):
+        """Returns free space for the respective customer."""
+        return self.quota - self.used
+
+    def alloc(self, size):
+        """Tries to allocate the requested size in bytes."""
+        if self.free < size:
+            raise QuotaExceeded(quota=self.quota)
+
+        return True
+
+    def to_dict(self):
+        """Returns a JSON compliant dictionary."""
+        dictionary = super().to_dict()
+        dictionary.update({
+            'quota': self.quota,
+            'free': self.free,
+            'used': self.used})
+        return dictionary
