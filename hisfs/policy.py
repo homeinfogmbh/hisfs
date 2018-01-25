@@ -1,8 +1,7 @@
 """File system policy."""
 
 
-
-def path(nodes):
+def to_path(nodes):
     """Converts the nodes into a path string."""
 
     return PATHSEP + PATHSEP.join(nodes)
@@ -62,7 +61,7 @@ class UserInode:
                     (Inode.name == parent_name) & parent_expression
                     & self.context_expression)
             except Inode.DoesNotExist:
-                raise NoSuchInode(path(processed))
+                raise NoSuchInode(to_path(processed))
 
             yield parent
 
