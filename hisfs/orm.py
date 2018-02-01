@@ -2,7 +2,7 @@
 
 from contextlib import suppress
 
-from peewee import DoesNotExist, Model, PrimaryKeyField, ForeignKeyField, \
+from peewee import Model, PrimaryKeyField, ForeignKeyField, \
     IntegerField, SmallIntegerField, CharField
 
 from homeinfo.crm import Customer
@@ -103,7 +103,6 @@ class Inode(FSModel):
             raise ValueError('Must specify owner and/or group.')
 
         parent = None
-        consumed = []
 
         for node in nodes:
             expression = cls.name == node
@@ -285,7 +284,7 @@ class Inode(FSModel):
         """Deletes a virtual inode."""
         try:
             self.__class__.get(self.__class__.parent == self)
-        except DoesNotExist:
+        except self.__class__.DoesNotExist:
             if self._file is not None:
                 delete(self._file)
 

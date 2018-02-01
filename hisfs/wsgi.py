@@ -3,8 +3,6 @@
 from functools import lru_cache
 from contextlib import suppress
 
-from peewee import DoesNotExist
-
 from wsgilib import routed, OK, JSON, Binary
 from filedb import FileError
 
@@ -44,13 +42,13 @@ class FS(AuthorizedService):
                     self.path, owner=self.account, group=self.customer)
             except NoFileNameSpecified:
                 raise NoInodeSpecified() from None
-            except DoesNotExist:
+            except Inode.DoesNotExist:
                 raise NoSuchNode() from None
 
         try:
             return Inode.by_id(
                 self.vars['id'], owner=self.account, group=self.customer)
-        except DoesNotExist:
+        except Inode.DoesNotExist:
             raise NoSuchNode() from None
 
     @property
@@ -160,7 +158,7 @@ class FS(AuthorizedService):
         try:
             inode = Inode.by_path(
                 self.resource, owner=self.account, group=self.group)
-        except DoesNotExist:
+        except Inode.DoesNotExist:
             raise NoSuchNode() from None
 
         if inode.parent is None:
