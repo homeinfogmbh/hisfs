@@ -1,6 +1,6 @@
 """Errors of the FS."""
 
-from his.messages import locales, HISMessage
+from his.messages import locales, Message
 
 __all__ = [
     'FileSystemError',
@@ -13,7 +13,7 @@ __all__ = [
     'QuotaExceeded']
 
 
-class FileSystemError(HISMessage):
+class FileSystemError(Message):
     """Indicates errors within the file system."""
 
     LOCALES = locales('/etc/his.d/locale/fs.ini')
