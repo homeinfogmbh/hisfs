@@ -1,6 +1,7 @@
 """ORM models."""
 
-from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField
+from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField, \
+    BigIntegerField
 
 from his.orm import Account
 from homeinfo.crm import Customer
@@ -100,7 +101,7 @@ class CustomerQuota(FSModel):
         table_name = 'customer_quota'
 
     customer = ForeignKeyField(Customer, db_column='customer')
-    quota = IntegerField(default=DEFAULT_QUOTA)     # Quota in bytes.
+    quota = BigIntegerField(default=DEFAULT_QUOTA)     # Quota in bytes.
 
     @classmethod
     def by_customer(cls, customer):
