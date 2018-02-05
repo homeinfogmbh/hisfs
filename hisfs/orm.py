@@ -86,6 +86,10 @@ class File(FSModel):
 class CustomerQuota(FSModel):
     """Media settings for a customer."""
 
+    class Meta:
+        """Set table name."""
+        table_name = 'customer_quota'
+
     customer = ForeignKeyField(Customer, db_column='customer')
     quota = IntegerField(default=DEFAULT_QUOTA)     # Quota in bytes.
 
