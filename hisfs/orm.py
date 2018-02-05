@@ -82,6 +82,15 @@ class File(FSModel):
         except FileError:
             raise ReadError()
 
+    def to_dict(self):
+        """Returns a JSON-ish dictionary."""
+        dictionary = super().to_dict()
+        dictionary.update({
+            'sha256sum': self.sha256sum,
+            'mimetype': self.mimetype,
+            'size': self.size})
+        return dictionary
+
 
 class CustomerQuota(FSModel):
     """Media settings for a customer."""
