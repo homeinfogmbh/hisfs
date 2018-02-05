@@ -12,5 +12,8 @@ setup(
     maintainer_email='<r dot neumann at homeinfo period de>',
     requires=['his'],
     packages=['hisfs'],
-    data_files=[('/etc/his.d/locale', ['files/fs.ini'])],
+    scripts=['files/hisfsd'],
+    data_files=[
+        ('/usr/lib/systemd/system', ['files/hisfs.service']),
+        ('/etc/his.d/locale', ['files/fs.ini'])],
     description='HOMEINFO Integrated Services File System')
