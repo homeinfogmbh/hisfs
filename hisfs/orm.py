@@ -14,8 +14,8 @@ __all__ = ['File']
 
 
 DATABASE = MySQLDatabase(
-    CONFIG['db']['database'], host=CONFIG['db']['host'],
-    user=CONFIG['db']['user'], passwd=CONFIG['db']['passwd'], closing=True)
+    CONFIG['db']['db'], host=CONFIG['db']['host'], user=CONFIG['db']['user'],
+    passwd=CONFIG['db']['passwd'], closing=True)
 PATHSEP = '/'
 BINARY_FACTOR = 1024
 DECIMAL_FACTOR = 1000
