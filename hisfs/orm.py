@@ -1,10 +1,10 @@
 """ORM models."""
 
-from peewee import MySQLDatabase, Model, PrimaryKeyField, ForeignKeyField, \
-    IntegerField, CharField
+from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField
 
 from his.orm import Account
 from homeinfo.crm import Customer
+from peeweeplus import MySQLDatabase, JSONModel
 from filedb import FileError, sha256sum, mimetype, size, FileProperty
 
 from hisfs.config import CONFIG
@@ -29,7 +29,7 @@ GIBIBATE = BINARY_FACTOR * MEBIBYTE
 DEFAULT_QUOTA = 5 * GIBIBATE    # 5.0 GiB.
 
 
-class FSModel(Model):
+class FSModel(JSONModel):
     """Basic immobit model."""
 
     class Meta:
