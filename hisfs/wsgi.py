@@ -13,7 +13,7 @@ from hisfs.orm import File, CustomerQuota
 __all__ = ['APPLICATION']
 
 
-APPLICATION = Application('hisfs')
+APPLICATION = Application('hisfs', cors=True, debug=True)
 
 
 def _list_files():
