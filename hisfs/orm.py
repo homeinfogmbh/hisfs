@@ -45,7 +45,7 @@ class File(FSModel):
 
     name = CharField(255, db_column='name')
     account = ForeignKeyField(Account, db_column='account')
-    _file = IntegerField(null=True)
+    _file = IntegerField(column_name='file', null=True)
     data = FileProperty(_file)
 
     @classmethod
