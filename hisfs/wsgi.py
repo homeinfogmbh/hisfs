@@ -33,7 +33,7 @@ def _get_file(ident):
 
 
 @authenticated
-@authorized('fs')
+@authorized('hisfs')
 def list_():
     """Lists the respective files."""
 
@@ -41,7 +41,7 @@ def list_():
 
 
 @authenticated
-@authorized('fs')
+@authorized('hisfs')
 def get(ident):
     """Returns the respective file."""
 
@@ -54,7 +54,7 @@ def get(ident):
 
 
 @authenticated
-@authorized('fs')
+@authorized('hisfs')
 def post(name):
     """Adds a new file."""
 
@@ -72,7 +72,7 @@ def post(name):
 
 
 @authenticated
-@authorized('fs')
+@authorized('hisfs')
 def patch(ident):
     """Modifies the respective file."""
 
@@ -81,7 +81,7 @@ def patch(ident):
 
 
 @authenticated
-@authorized('fs')
+@authorized('hisfs')
 def delete(ident):
     """Deletes the respective file."""
 
