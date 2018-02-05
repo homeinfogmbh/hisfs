@@ -1,5 +1,5 @@
-"""HIS module providing a file system"""
+"""HIS module providing a file system."""
 
-from .wsgi import FS
+from hisfs.orm import File, CustomerQuota
 
-__all__ = ['FS']
+__all__ = ['File', 'CustomerQuota']

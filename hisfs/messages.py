@@ -1,6 +1,6 @@
 """Errors of the FS."""
 
-from his.api.messages import locales, HISMessage
+from his.messages import locales, HISMessage
 
 __all__ = [
     'FileSystemError',
