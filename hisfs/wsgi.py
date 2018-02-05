@@ -1,179 +1,98 @@
 """File management module."""
 
-from functools import lru_cache
-from contextlib import suppress
+from flask import request
 
-from wsgilib import routed, OK, JSON, Binary
-from filedb import FileError
+from his import ACCOUNT, CUSTOMER, DATA, authenticated, authorized, Account
+from wsgilib import Application, JSON, Binary
 
-from his.api.messages import NotAnInteger
-from his.api.handlers import service, AuthorizedService
-
-from .messages import NotADirectory, NoSuchNode, DeletionError, \
-    NoFileNameSpecified, NoInodeSpecified, InvalidFileName, FileExists, \
-    FileCreated, FileDeleted, FileUnchanged, NotWritable, NotReadable, \
-    RootDeletionError, ParentDirDoesNotExist
-from .orm import Inode
+from hisfs.messages import QuotaUnconfigured, NoSuchFile, FileCreated, \
+    FilePatched, FileDeleted
+from hisfs.orm import File, CustomerQuota
 
 
-__all__ = ['FS']
+__all__ = ['APPLICATION']
 
 
-@service('fs')
-@routed('/fs/[id:int]')
-class FS(AuthorizedService):
-    """Service that manages files."""
+APPLICATION = Application('hisfs')
 
-    @property
-    def path(self):
-        """Returns the optional path."""
-        try:
-            return self.query['path']
-        except KeyError:
-            raise NoFileNameSpecified()
 
-    @property
-    @lru_cache(maxsize=1)
-    def inode(self):
-        """Returns the requested Inode."""
-        if self.vars['id'] is None:
-            try:
-                return Inode.by_path(
-                    self.path, owner=self.account, group=self.customer)
-            except NoFileNameSpecified:
-                raise NoInodeSpecified() from None
-            except Inode.DoesNotExist:
-                raise NoSuchNode() from None
+def _list_files():
+    """Lists the files of the current customer."""
 
-        try:
-            return Inode.by_id(
-                self.vars['id'], owner=self.account, group=self.customer)
-        except Inode.DoesNotExist:
-            raise NoSuchNode() from None
+    return File.select().join(Account).where(Account.customer == CUSTOMER.id)
 
-    @property
-    @lru_cache(maxsize=1)
-    def parent(self):
-        """Returns the parent inode."""
-        try:
-            return self.inode
-        except NoInodeSpecified:
-            return None
-        except NoSuchNode:
-            raise ParentDirDoesNotExist() from None
 
-    @property
-    def sha256sum(self):
-        """Returns the specified SHA-256 checksum."""
-        return self.environ['HTTP_IF_NONE_MATCH']
+def _get_file(ident):
+    """Returns the file with the respective id of the current customer."""
 
-    @property
-    def mode(self):
-        """Returns the desired file mode"""
-        try:
-            mode = self.query['mode']
-        except KeyError:
-            # Return default modes.
-            if self.data.bytes:
-                return 0o644
+    try:
+        return File.select().join(Account).where(
+            (File.id == ident) & (Account.customer == CUSTOMER.id)).get()
+    except File.DoesNotExist:
+        raise NoSuchFile()
 
-            return 0o755
 
-        try:
-            return int(mode)
-        except (TypeError, ValueError):
-            raise NotAnInteger('mode', mode) from None
+@authenticated
+@authorized('fs')
+def list_():
+    """Lists the respective files."""
 
-    @property
-    def recursive(self):
-        """Returns the recursive flag."""
-        return
+    return JSON([file.to_dict() for file in _list_files()])
 
-    def root(self):
-        """Yields root directory contents."""
-        return Inode.root_for(owner=self.account, group=self.customer)
 
-    def list_root(self):
-        """Lists the root directoy."""
-        return JSON([inode.dict_for(self.account) for inode in self.root])
+@authenticated
+@authorized('fs')
+def get(ident):
+    """Returns the respective file."""
 
-    def add(self):
-        """Adds a new inode."""
-        inode = Inode()
+    try:
+        request.args['metadata']
+    except KeyError:
+        return Binary(_get_file(ident).data)
 
-        try:
-            inode.name = self.name
-        except ValueError:
-            raise InvalidFileName()
+    return JSON(_get_file(ident).to_dict())
 
-        inode.owner = self.account
-        inode.group = self.customer
-        inode.parent = self.parent
 
-        if self.data.bytes:
-            inode.data = self.data.bytes
+@authenticated
+@authorized('fs')
+def post(name):
+    """Adds a new file."""
 
-        inode.mode = self.mode
-        inode.save()
-        return FileCreated()
+    data = DATA.bytes
 
-    def get(self):
-        """Retrieves (a) file(s)."""
-        if self.vars['id'] is None:
-            return self.list_root()
+    try:
+        quota = CustomerQuota.get(CustomerQuota.customer == CUSTOMER.id)
+    except CustomerQuota.DoesNotExist:
+        raise QuotaUnconfigured()
 
-        if self.inode.readable_by(self.account):
-            with suppress(KeyError):
-                # Access self.sha256sum first to trigger a possible
-                # KeyError before the resource-hungry inode.sha256sum
-                # is invoked.
-                if self.sha256sum == self.inode.sha256sum:
-                    return FileUnchanged()
+    quota.alloc(len(data))  # Raises QuotaExceeded() on failure.
+    file = File.add(name, ACCOUNT.id, data)
+    file.save()
+    return FileCreated(id=file.id)
 
-            if self.query.get('sha256sum', False):
-                return OK(self.inode.sha256sum)
 
-            return Binary(self.inode.data)
+@authenticated
+@authorized('fs')
+def patch(ident):
+    """Modifies the respective file."""
 
-        raise NotReadable() from None
+    _get_file(ident).patch(DATA.json)
+    return FilePatched()
 
-    def post(self):
-        """Adds new files."""
-        if self.parent.isdir:
-            if self.parent.writable_by(self.account):
-                if self.name in (child.name for child in self.parent.children):
-                    raise FileExists() from None
 
-                return self.add()
+@authenticated
+@authorized('fs')
+def delete(ident):
+    """Deletes the respective file."""
 
-            raise NotWritable() from None
+    _get_file(ident).delete_instance()
+    return FileDeleted()
 
-        raise NotADirectory() from None
 
-    def delete(self):
-        """Deletes a file."""
-        if self.resource is None:
-            raise NoFileNameSpecified()
-
-        try:
-            inode = Inode.by_path(
-                self.resource, owner=self.account, group=self.group)
-        except Inode.DoesNotExist:
-            raise NoSuchNode() from None
-
-        if inode.parent is None:
-            raise RootDeletionError() from None
-
-        if inode.parent.writable_by(self.account):
-            try:
-                inode.remove(recursive=self.query.get('recursive', False))
-            except FileError:
-                raise DeletionError() from None
-
-            return FileDeleted()
-
-        raise NotWritable() from None
-
-    def options(self):
-        """Returns options information."""
-        return OK()
+ROUTES = (
+    ('GET', '/', list_, 'list_files'),
+    ('GET', '/<int:ident>', get, 'get_file'),
+    ('POST', '/<str:name>', post, 'post_file'),
+    ('PATCH', '/<int:ident>', patch, 'patch_file'),
+    ('DELETE', '/<int:ident>', delete, 'delete_file'))
+APPLICATION.add_routes(ROUTES)
