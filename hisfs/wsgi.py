@@ -92,7 +92,7 @@ def delete(ident):
 ROUTES = (
     ('GET', '/', list_, 'list_files'),
     ('GET', '/<int:ident>', get, 'get_file'),
-    ('POST', '/<str:name>', post, 'post_file'),
+    ('POST', '/<name>', post, 'post_file'),
     ('PATCH', '/<int:ident>', patch, 'patch_file'),
     ('DELETE', '/<int:ident>', delete, 'delete_file'))
 APPLICATION.add_routes(ROUTES)
