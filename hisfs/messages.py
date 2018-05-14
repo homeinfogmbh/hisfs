@@ -7,7 +7,7 @@ __all__ = [
     'QuotaUnconfigured',
     'NoSuchFile',
     'FileCreated',
-    'FilePatched',
+    'FileExists',
     'FileDeleted',
     'ReadError',
     'QuotaExceeded']
@@ -44,14 +44,6 @@ class FileExists(FileSystemError):
     """Indicates that the respective file already exists."""
 
     STATUS = 409
-
-
-class FilePatched(FileSystemError):
-    """Indicates that the respective file
-    has successfully been patched.
-    """
-
-    STATUS = 200
 
 
 class FileDeleted(FileSystemError):

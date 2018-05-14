@@ -7,7 +7,7 @@ from his import ACCOUNT, CUSTOMER, DATA, authenticated, authorized, Account
 from wsgilib import Application, JSON, Binary
 
 from hisfs.messages import QuotaUnconfigured, NoSuchFile, FileCreated, \
-    FileExists, FilePatched, FileDeleted, QuotaExceeded
+    FileExists, FileDeleted, QuotaExceeded
 from hisfs.orm import File, CustomerQuota
 
 
@@ -29,20 +29,20 @@ def _get_quota():
 QUOTA = LocalProxy(_get_quota)
 
 
-def _list_files():
-    """Lists the files of the current customer."""
+def with_file(function):
+    """Decorator to translate file ID to actual file."""
 
-    return File.select().join(Account).where(Account.customer == CUSTOMER.id)
+    def wrapper(ident, *args, **kwargs):
+        """Wraps the function."""
+        try:
+            file = File.select().join(Account).where(
+                (File.id == ident) & (Account.customer == CUSTOMER.id)).get()
+        except File.DoesNotExist:
+            raise NoSuchFile()
 
+        return function(file, *args, **kwargs)
 
-def _get_file(ident):
-    """Returns the file with the respective id of the current customer."""
-
-    try:
-        return File.select().join(Account).where(
-            (File.id == ident) & (Account.customer == CUSTOMER.id)).get()
-    except File.DoesNotExist:
-        raise NoSuchFile()
+    return wrapper
 
 
 @authenticated
@@ -50,20 +50,22 @@ def _get_file(ident):
 def list_():
     """Lists the respective files."""
 
-    return JSON([file.to_dict() for file in _list_files()])
+    return JSON([file.to_dict() for file in File.select().join(Account).where(
+        Account.customer == CUSTOMER.id)])
 
 
 @authenticated
 @authorized('hisfs')
-def get(ident):
+@with_file
+def get(file):
     """Returns the respective file."""
 
-    try:
-        request.args['metadata']
-    except KeyError:
-        return Binary(_get_file(ident).data)
+    if 'metadata' in request.args:
+        return JSON(file.to_dict())
+    elif 'named' in request.args:
+        return Binary(file.data, filename=file.name)
 
-    return JSON(_get_file(ident).to_dict())
+    return Binary(file.data)
 
 
 @authenticated
@@ -118,21 +120,11 @@ def post_multi():
 
 @authenticated
 @authorized('hisfs')
-def patch(ident):
-    """Modifies the respective file."""
-
-    file = _get_file(ident)
-    file = file.patch(DATA.json)
-    file.save()
-    return FilePatched()
-
-
-@authenticated
-@authorized('hisfs')
-def delete(ident):
+@with_file
+def delete(file):
     """Deletes the respective file."""
 
-    _get_file(ident).delete_instance()
+    file.delete_instance()
     return FileDeleted()
 
 
@@ -141,6 +133,5 @@ ROUTES = (
     ('GET', '/<int:ident>', get, 'get_file'),
     ('POST', '/', post_multi, 'post_files'),
     ('POST', '/<name>', post, 'post_file'),
-    ('PATCH', '/<int:ident>', patch, 'patch_file'),
     ('DELETE', '/<int:ident>', delete, 'delete_file'))
 APPLICATION.add_routes(ROUTES)
