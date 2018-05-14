@@ -16,6 +16,15 @@ __all__ = ['APPLICATION']
 APPLICATION = Application('hisfs', cors=True, debug=True)
 
 
+def _get_quota():
+    """Returns the customer's quota."""
+
+    try:
+        return CustomerQuota.get(CustomerQuota.customer == CUSTOMER.id)
+    except CustomerQuota.DoesNotExist:
+        raise QuotaUnconfigured()
+
+
 def _list_files():
     """Lists the files of the current customer."""
 
@@ -59,12 +68,7 @@ def post(name):
     """Adds a new file."""
 
     data = DATA.bytes
-
-    try:
-        quota = CustomerQuota.get(CustomerQuota.customer == CUSTOMER.id)
-    except CustomerQuota.DoesNotExist:
-        raise QuotaUnconfigured()
-
+    quota = _get_quota()
     quota.alloc(len(data))  # Raises QuotaExceeded() on failure.
     file = File.add(name, ACCOUNT.id, data)
     file.save()
@@ -76,7 +80,9 @@ def post(name):
 def patch(ident):
     """Modifies the respective file."""
 
-    _get_file(ident).patch(DATA.json)
+    file = _get_file(ident)
+    file = file.patch(DATA.json)
+    file.save()
     return FilePatched()
 
 

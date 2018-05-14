@@ -1,12 +1,14 @@
 """ORM models."""
 
+from logging import getLogger
+
 from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField, \
     BigIntegerField
 
+from filedb import FileError, add, get, delete, sha256sum, mimetype, size
 from his.orm import Account
 from homeinfo.crm import Customer
 from peeweeplus import MySQLDatabase, JSONModel
-from filedb import FileError, sha256sum, mimetype, size, FileProperty
 
 from hisfs.config import CONFIG
 from hisfs.messages import ReadError, QuotaExceeded
@@ -30,6 +32,9 @@ GIBIBATE = BINARY_FACTOR * MEBIBYTE
 DEFAULT_QUOTA = 5 * GIBIBATE    # 5.0 GiB.
 
 
+LOGGER = getLogger(__file__)
+
+
 class FSModel(JSONModel):
     """Basic immobit model."""
 
@@ -46,8 +51,7 @@ class File(FSModel):
 
     name = CharField(255, db_column='name')
     account = ForeignKeyField(Account, db_column='account')
-    _file = IntegerField(column_name='file', null=True)
-    data = FileProperty(_file)
+    _file = IntegerField(column_name='file')
 
     @classmethod
     def add(cls, name, account, data):
@@ -58,6 +62,24 @@ class File(FSModel):
         file.data = data
         file.save()
         return file
+
+    @property
+    def data(self):
+        """Returns the respective data."""
+        try:
+            return get(self._file)
+        except FileError:
+            raise ReadError()
+
+    @data.setter
+    def data(self, data):
+        """Sets the respective data."""
+        try:
+            delete(self._file)
+        except FileError as file_error:
+            LOGGER.error(file_error)
+
+        self._file = add(data)
 
     @property
     def sha256sum(self):
@@ -82,6 +104,16 @@ class File(FSModel):
             return size(self._file)
         except FileError:
             raise ReadError()
+
+    def delete_instance(self, recursive=False, delete_nullable=False):
+        """Removes the file."""
+        try:
+            delete(self._file)
+        except FileError as file_error:
+            LOGGER.error(file_error)
+
+        return super().delete_instance(
+            recursive=recursive, delete_nullable=delete_nullable)
 
     def to_dict(self):
         """Returns a JSON-ish dictionary."""
