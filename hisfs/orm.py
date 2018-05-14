@@ -5,7 +5,7 @@ from logging import getLogger
 from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField, \
     BigIntegerField
 
-from filedb import FileError, add, get, delete, sha256sum, mimetype, size
+from filedb import FileError, add, delete, get, mimetype, sha256sum, size
 from his.orm import Account
 from homeinfo.crm import Customer
 from peeweeplus import MySQLDatabase, JSONModel
