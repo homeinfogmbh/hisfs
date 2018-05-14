@@ -40,6 +40,12 @@ class FileCreated(FileSystemError):
     STATUS = 201
 
 
+class FileExists(FileSystemError):
+    """Indicates that the respective file already exists."""
+
+    STATUS = 409
+
+
 class FilePatched(FileSystemError):
     """Indicates that the respective file
     has successfully been patched.

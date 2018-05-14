@@ -11,7 +11,7 @@ from homeinfo.crm import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
 from hisfs.config import CONFIG
-from hisfs.messages import ReadError, QuotaExceeded
+from hisfs.messages import FileExists, ReadError, QuotaExceeded
 
 __all__ = ['File']
 
@@ -56,12 +56,17 @@ class File(FSModel):
     @classmethod
     def add(cls, name, account, data):
         """Adds the respective file."""
-        file = cls()
-        file.name = name
-        file.account = account
-        file.data = data
-        file.save()
-        return file
+        try:
+            File.get((File.name == name) & (File.account == account))
+        except cls.DoesNotExist:
+            file = cls()
+            file.name = name
+            file.account = account
+            file.data = data
+            file.save()
+            return file
+
+        raise FileExists(name=name)
 
     @property
     def data(self):
