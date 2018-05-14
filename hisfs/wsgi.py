@@ -1,12 +1,13 @@
 """File management module."""
 
 from flask import request
+from werkzeug.local import LocalProxy
 
 from his import ACCOUNT, CUSTOMER, DATA, authenticated, authorized, Account
 from wsgilib import Application, JSON, Binary
 
 from hisfs.messages import QuotaUnconfigured, NoSuchFile, FileCreated, \
-    FilePatched, FileDeleted
+    FileExists, FilePatched, FileDeleted, QuotaExceeded
 from hisfs.orm import File, CustomerQuota
 
 
@@ -23,6 +24,9 @@ def _get_quota():
         return CustomerQuota.get(CustomerQuota.customer == CUSTOMER.id)
     except CustomerQuota.DoesNotExist:
         raise QuotaUnconfigured()
+
+
+QUOTA = LocalProxy(_get_quota)
 
 
 def _list_files():
@@ -68,11 +72,48 @@ def post(name):
     """Adds a new file."""
 
     data = DATA.bytes
-    quota = _get_quota()
-    quota.alloc(len(data))  # Raises QuotaExceeded() on failure.
+    QUOTA.alloc(len(data))
     file = File.add(name, ACCOUNT.id, data)
     file.save()
     return FileCreated(id=file.id)
+
+
+@authenticated
+@authorized('hisfs')
+def post_multi():
+    """Adds a new files."""
+
+    added = {}
+    existing = []
+    too_large = []
+    quota_exceeded = []
+
+    for name, file_storage in request.files.items():
+        try:
+            data = file_storage.stream.read()
+        except MemoryError:
+            too_large.append(name)
+            continue
+
+        try:
+            QUOTA.alloc(len(data))
+        except QuotaExceeded:
+            quota_exceeded.append(name)
+            continue
+
+        try:
+            file = File.add(name, ACCOUNT.id, data)
+        except FileExists:
+            existing.append(name)
+            continue
+
+        file.save()
+        added[name] = file.id
+
+    status = 400 if existing or too_large or quota_exceeded else 201
+    return JSON({
+        'added': added, 'existing': existing, 'too_large': too_large,
+        'quota_exceeded': quota_exceeded}, status=status)
 
 
 @authenticated
@@ -98,6 +139,7 @@ def delete(ident):
 ROUTES = (
     ('GET', '/', list_, 'list_files'),
     ('GET', '/<int:ident>', get, 'get_file'),
+    ('POST', '/', post_multi, 'post_files'),
     ('POST', '/<name>', post, 'post_file'),
     ('PATCH', '/<int:ident>', patch, 'patch_file'),
     ('DELETE', '/<int:ident>', delete, 'delete_file'))
