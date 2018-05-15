@@ -10,9 +10,9 @@ from homeinfo.crm import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
 from hisfs.config import CONFIG
-from hisfs.messages import FileExists, ReadError, QuotaExceeded
+from hisfs.messages import ReadError, QuotaExceeded
 
-__all__ = ['File', 'Quota']
+__all__ = ['FileExists', 'File', 'Quota']
 
 
 DATABASE = MySQLDatabase(
@@ -22,6 +22,15 @@ PATHSEP = '/'
 
 
 LOGGER = getLogger(__file__)
+
+
+class FileExists(Exception):
+    """Indicates that a file with the respective name already exists."""
+
+    def __init__(self, file):
+        """Sets the existing file."""
+        super().__init__()
+        self.file = file
 
 
 class FSModel(JSONModel):
@@ -46,7 +55,7 @@ class File(FSModel):
     def add(cls, name, customer, bytes_):
         """Adds the respective file."""
         try:
-            File.get((File.name == name) & (File.customer == customer))
+            file = File.get((File.name == name) & (File.customer == customer))
         except cls.DoesNotExist:
             file = cls()
             file.name = name
@@ -55,7 +64,7 @@ class File(FSModel):
             file.save()
             return file
 
-        raise FileExists(name=name)
+        raise FileExists(file)
 
     @property
     def bytes(self):

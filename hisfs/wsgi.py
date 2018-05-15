@@ -11,7 +11,7 @@ from wsgilib import Application, JSON, Binary
 from hisfs.config import DEFAULT_QUOTA
 from hisfs.messages import NoSuchFile, FileCreated, FileExists, FileDeleted, \
     QuotaExceeded, NotAPDFDocument
-from hisfs.orm import File, Quota
+from hisfs.orm import FileExists as FileExists_, File, Quota
 from hisfs.util import is_pdf, pdfimages
 
 
@@ -79,7 +79,12 @@ def post(name):
 
     data = request.get_data()
     QUOTA.alloc(len(data))
-    file = File.add(name, CUSTOMER.id, data)
+
+    try:
+        file = File.add(name, CUSTOMER.id, data)
+    except FileExists_ as file_exists:
+        raise FileExists(id=file_exists.file.id)
+
     file.save()
     return FileCreated(id=file.id)
 
@@ -109,12 +114,12 @@ def post_multi():
 
         try:
             file = File.add(name, CUSTOMER.id, data)
-        except FileExists:
-            existing.append(name)
-            continue
-
-        file.save()
-        added[name] = file.id
+        except FileExists_ as file_exists:
+            file = file_exists.file
+            existing[file.name] = file.id
+        else:
+            file.save()
+            added[name] = file.id
 
     status = 400 if existing or too_large or quota_exceeded else 201
     return JSON({
@@ -155,7 +160,7 @@ def convert_pdf(file):
 
         try:
             file = File.add(name, CUSTOMER.id, blob)
-        except FileExists:
+        except FileExists_:
             existing.append(name)
             continue
 
