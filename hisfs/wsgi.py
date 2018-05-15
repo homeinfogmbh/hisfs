@@ -1,5 +1,7 @@
 """File management module."""
 
+from pathlib import Path
+
 from flask import request
 from werkzeug.local import LocalProxy
 
@@ -8,8 +10,9 @@ from wsgilib import Application, JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
 from hisfs.messages import NoSuchFile, FileCreated, FileExists, FileDeleted, \
-    QuotaExceeded
+    QuotaExceeded, NotAPDFDocument
 from hisfs.orm import File, Quota
+from hisfs.util import is_pdf, pdfimages
 
 
 __all__ = ['APPLICATION']
@@ -64,9 +67,9 @@ def get(file):
     if 'metadata' in request.args:
         return JSON(file.to_dict())
     elif 'named' in request.args:
-        return Binary(file.data, filename=file.name)
+        return Binary(file.bytes, filename=file.name)
 
-    return Binary(file.data)
+    return Binary(file.bytes)
 
 
 @authenticated
@@ -129,10 +132,37 @@ def delete(file):
     return FileDeleted()
 
 
+@authenticated
+@authorized('hisfs')
+@with_file
+def convert_pdf(file):
+    """Converts the file."""
+
+    blob = file.bytes
+
+    if not is_pdf(blob):
+        raise NotAPDFDocument()
+
+    format_ = request.args.get('format', 'jpeg')
+    suffix = '.{}'.format(format_.lower())
+    files = {}
+
+    for index, blob in enumerate(pdfimages(blob, suffix=suffix)):
+        QUOTA.alloc(len(blob))
+        path = Path(file.name)
+        name = path.stem + '-page{}'.format(index) + suffix
+        file = File.add(name, CUSTOMER.id, blob)
+        file.save()
+        files[name] = file.id
+
+    return FileCreated(files=files)
+
+
 ROUTES = (
     ('GET', '/', list_, 'list_files'),
     ('GET', '/<int:ident>', get, 'get_file'),
     ('POST', '/', post_multi, 'post_files'),
+    ('POST', '/convert/<int:ident>', convert_pdf, 'convert_pdf'),
     ('POST', '/<name>', post, 'post_file'),
     ('DELETE', '/<int:ident>', delete, 'delete_file'))
 APPLICATION.add_routes(ROUTES)

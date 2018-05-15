@@ -9,7 +9,8 @@ __all__ = [
     'FileExists',
     'FileDeleted',
     'ReadError',
-    'QuotaExceeded']
+    'QuotaExceeded',
+    'NotAPDFDocument']
 
 
 class FileSystemError(Message):
@@ -55,3 +56,9 @@ class QuotaExceeded(FileSystemError):
     """Indicates that the respective customer has exceeded their quota."""
 
     STATUS = 403
+
+
+class NotAPDFDocument(FileSystemError):
+    """Indicates that the respective file is not a PDF document."""
+
+    STATUS = 400

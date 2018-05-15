@@ -43,7 +43,7 @@ class File(FSModel):
     _file = IntegerField(column_name='file')
 
     @classmethod
-    def add(cls, name, customer, data):
+    def add(cls, name, customer, bytes_):
         """Adds the respective file."""
         try:
             File.get((File.name == name) & (File.customer == customer))
@@ -51,29 +51,29 @@ class File(FSModel):
             file = cls()
             file.name = name
             file.customer = customer
-            file.data = data
+            file.bytes = bytes_
             file.save()
             return file
 
         raise FileExists(name=name)
 
     @property
-    def data(self):
-        """Returns the respective data."""
+    def bytes(self):
+        """Returns the respective bytes."""
         try:
             return get(self._file)
         except FileError:
             raise ReadError()
 
-    @data.setter
-    def data(self, data):
-        """Sets the respective data."""
+    @bytes.setter
+    def bytes(self, bytes_):
+        """Sets the respective bytes."""
         try:
             delete(self._file)
         except FileError as file_error:
             LOGGER.error(file_error)
 
-        self._file = add(data)
+        self._file = add(bytes_)
 
     @property
     def sha256sum(self):
