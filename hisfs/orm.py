@@ -12,7 +12,7 @@ from peeweeplus import MySQLDatabase, JSONModel
 from hisfs.config import CONFIG
 from hisfs.messages import FileExists, ReadError, QuotaExceeded
 
-__all__ = ['File']
+__all__ = ['File', 'Quota']
 
 
 DATABASE = MySQLDatabase(
@@ -119,12 +119,8 @@ class File(FSModel):
         return dictionary
 
 
-class CustomerQuota(FSModel):
-    """Media settings for a customer."""
-
-    class Meta:
-        """Set table name."""
-        table_name = 'customer_quota'
+class Quota(FSModel):
+    """Quota settings for a customer."""
 
     customer = ForeignKeyField(Customer, db_column='customer')
     quota = BigIntegerField()   # Quota in bytes.

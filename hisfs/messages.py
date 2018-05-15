@@ -4,7 +4,6 @@ from his.messages import locales, Message
 
 __all__ = [
     'FileSystemError',
-    'QuotaUnconfigured',
     'NoSuchFile',
     'FileCreated',
     'FileExists',
@@ -18,14 +17,6 @@ class FileSystemError(Message):
 
     LOCALES = locales('/etc/his.d/locale/fs.ini')
     ABSTRACT = True
-
-
-class QuotaUnconfigured(FileSystemError):
-    """Indicates that the quota for the
-    respective customer is not configured.
-    """
-
-    STATUS = 404
 
 
 class NoSuchFile(FileSystemError):

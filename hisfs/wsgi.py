@@ -9,7 +9,7 @@ from wsgilib import Application, JSON, Binary
 from hisfs.config import DEFAULT_QUOTA
 from hisfs.messages import NoSuchFile, FileCreated, FileExists, FileDeleted, \
     QuotaExceeded
-from hisfs.orm import File, CustomerQuota
+from hisfs.orm import File, Quota
 
 
 __all__ = ['APPLICATION']
@@ -22,9 +22,9 @@ def _get_quota():
     """Returns the customer's quota."""
 
     try:
-        return CustomerQuota.get(CustomerQuota.customer == CUSTOMER.id)
-    except CustomerQuota.DoesNotExist:
-        return CustomerQuota(customer=CUSTOMER.id, quota=DEFAULT_QUOTA)
+        return Quota.get(Quota.customer == CUSTOMER.id)
+    except Quota.DoesNotExist:
+        return Quota(customer=CUSTOMER.id, quota=DEFAULT_QUOTA)
 
 
 QUOTA = LocalProxy(_get_quota)
