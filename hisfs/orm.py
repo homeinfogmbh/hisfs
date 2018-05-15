@@ -6,7 +6,6 @@ from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField, \
     BigIntegerField
 
 from filedb import FileError, add, delete, get, mimetype, sha256sum, size
-from his.orm import Account
 from homeinfo.crm import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
@@ -50,18 +49,18 @@ class File(FSModel):
     """Inode database model for the virtual filesystem."""
 
     name = CharField(255, db_column='name')
-    account = ForeignKeyField(Account, db_column='account')
+    customer = ForeignKeyField(Customer, db_column='customer')
     _file = IntegerField(column_name='file')
 
     @classmethod
-    def add(cls, name, account, data):
+    def add(cls, name, customer, data):
         """Adds the respective file."""
         try:
-            File.get((File.name == name) & (File.account == account))
+            File.get((File.name == name) & (File.customer == customer))
         except cls.DoesNotExist:
             file = cls()
             file.name = name
-            file.account = account
+            file.customer = customer
             file.data = data
             file.save()
             return file
@@ -148,8 +147,7 @@ class CustomerQuota(FSModel):
     @property
     def files(self):
         """Yields media file records of the respective customer."""
-        return File.select().join(Account).where(
-            (Account.customer == self.customer))
+        return File.select().where(File.customer == self.customer)
 
     @property
     def used(self):

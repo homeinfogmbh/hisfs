@@ -3,7 +3,7 @@
 from flask import request
 from werkzeug.local import LocalProxy
 
-from his import ACCOUNT, CUSTOMER, DATA, authenticated, authorized, Account
+from his import CUSTOMER, authenticated, authorized
 from wsgilib import Application, JSON, Binary
 
 from hisfs.messages import QuotaUnconfigured, NoSuchFile, FileCreated, \
@@ -35,8 +35,8 @@ def with_file(function):
     def wrapper(ident, *args, **kwargs):
         """Wraps the function."""
         try:
-            file = File.select().join(Account).where(
-                (File.id == ident) & (Account.customer == CUSTOMER.id)).get()
+            file = File.select().where(
+                (File.id == ident) & (File.customer == CUSTOMER.id)).get()
         except File.DoesNotExist:
             raise NoSuchFile()
 
@@ -50,8 +50,8 @@ def with_file(function):
 def list_():
     """Lists the respective files."""
 
-    return JSON([file.to_dict() for file in File.select().join(Account).where(
-        Account.customer == CUSTOMER.id)])
+    return JSON([file.to_dict() for file in File.select().where(
+        File.customer == CUSTOMER.id)])
 
 
 @authenticated
@@ -73,9 +73,9 @@ def get(file):
 def post(name):
     """Adds a new file."""
 
-    data = DATA.bytes
+    data = request.get_data()
     QUOTA.alloc(len(data))
-    file = File.add(name, ACCOUNT.id, data)
+    file = File.add(name, CUSTOMER.id, data)
     file.save()
     return FileCreated(id=file.id)
 
@@ -104,7 +104,7 @@ def post_multi():
             continue
 
         try:
-            file = File.add(name, ACCOUNT.id, data)
+            file = File.add(name, CUSTOMER.id, data)
         except FileExists:
             existing.append(name)
             continue
