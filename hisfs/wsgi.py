@@ -145,17 +145,24 @@ def convert_pdf(file):
 
     format_ = request.args.get('format', 'jpeg')
     suffix = '.{}'.format(format_.lower())
-    files = {}
+    created = {}
+    existing = []
 
     for index, blob in enumerate(pdfimages(blob, suffix=suffix)):
         QUOTA.alloc(len(blob))
         path = Path(file.name)
         name = path.stem + '-page{}'.format(index) + suffix
-        file = File.add(name, CUSTOMER.id, blob)
-        file.save()
-        files[name] = file.id
 
-    return FileCreated(files=files)
+        try:
+            file = File.add(name, CUSTOMER.id, blob)
+        except FileExists:
+            existing.append(name)
+            continue
+
+        file.save()
+        created[name] = file.id
+
+    return FileCreated(created=created, existing=existing)
 
 
 ROUTES = (
