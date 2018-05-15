@@ -6,3 +6,4 @@ __all__ = ['CONFIG']
 
 
 CONFIG = INIParser('/etc/hisfs.conf')
+DEFAULT_QUOTA = int(CONFIG['fs']['quota'])

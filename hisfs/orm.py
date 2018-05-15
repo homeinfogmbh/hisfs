@@ -19,16 +19,6 @@ DATABASE = MySQLDatabase(
     CONFIG['db']['db'], host=CONFIG['db']['host'], user=CONFIG['db']['user'],
     passwd=CONFIG['db']['passwd'], closing=True)
 PATHSEP = '/'
-BINARY_FACTOR = 1024
-DECIMAL_FACTOR = 1000
-BYTE = 1
-KILOBYTE = DECIMAL_FACTOR * BYTE
-KIBIBYTE = BINARY_FACTOR * BYTE
-MEGABYTE = DECIMAL_FACTOR * KILOBYTE
-MEBIBYTE = BINARY_FACTOR * KIBIBYTE
-GIGABYTE = DECIMAL_FACTOR * MEGABYTE
-GIBIBATE = BINARY_FACTOR * MEBIBYTE
-DEFAULT_QUOTA = 5 * GIBIBATE    # 5.0 GiB.
 
 
 LOGGER = getLogger(__file__)
@@ -137,7 +127,7 @@ class CustomerQuota(FSModel):
         table_name = 'customer_quota'
 
     customer = ForeignKeyField(Customer, db_column='customer')
-    quota = BigIntegerField(default=DEFAULT_QUOTA)     # Quota in bytes.
+    quota = BigIntegerField()   # Quota in bytes.
 
     @classmethod
     def by_customer(cls, customer):

@@ -6,8 +6,9 @@ from werkzeug.local import LocalProxy
 from his import CUSTOMER, authenticated, authorized
 from wsgilib import Application, JSON, Binary
 
-from hisfs.messages import QuotaUnconfigured, NoSuchFile, FileCreated, \
-    FileExists, FileDeleted, QuotaExceeded
+from hisfs.config import DEFAULT_QUOTA
+from hisfs.messages import NoSuchFile, FileCreated, FileExists, FileDeleted, \
+    QuotaExceeded
 from hisfs.orm import File, CustomerQuota
 
 
@@ -23,7 +24,7 @@ def _get_quota():
     try:
         return CustomerQuota.get(CustomerQuota.customer == CUSTOMER.id)
     except CustomerQuota.DoesNotExist:
-        raise QuotaUnconfigured()
+        return CustomerQuota(customer=CUSTOMER.id, quota=DEFAULT_QUOTA)
 
 
 QUOTA = LocalProxy(_get_quota)
