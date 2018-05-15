@@ -162,7 +162,7 @@ ROUTES = (
     ('GET', '/', list_, 'list_files'),
     ('GET', '/<int:ident>', get, 'get_file'),
     ('POST', '/', post_multi, 'post_files'),
-    ('POST', '/convert/<int:ident>', convert_pdf, 'convert_pdf'),
+    ('PATCH', '/<int:ident>', convert_pdf, 'convert_pdf'),
     ('POST', '/<name>', post, 'post_file'),
     ('DELETE', '/<int:ident>', delete, 'delete_file'))
 APPLICATION.add_routes(ROUTES)
