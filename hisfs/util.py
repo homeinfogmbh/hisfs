@@ -15,7 +15,7 @@ def is_pdf(blob):
 
 
 def pdfimages(blob, suffix='.jpeg', resolution=300):
-    """Converts a PDF file's pages to images."""
+    """Yields pages as images from a PDF file."""
 
     with Image(blob=blob, resolution=resolution) as pdf:
         for page in pdf.sequence:
