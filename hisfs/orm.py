@@ -15,9 +15,7 @@ from hisfs.messages import ReadError, QuotaExceeded
 __all__ = ['FileExists', 'File', 'Quota']
 
 
-DATABASE = MySQLDatabase(
-    CONFIG['db']['db'], host=CONFIG['db']['host'], user=CONFIG['db']['user'],
-    passwd=CONFIG['db']['passwd'], closing=True)
+DATABASE = MySQLDatabase.from_config(CONFIG['db'])
 PATHSEP = '/'
 
 
