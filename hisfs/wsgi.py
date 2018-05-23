@@ -95,7 +95,7 @@ def post_multi():
     """Adds a new files."""
 
     added = {}
-    existing = []
+    existing = {}
     too_large = []
     quota_exceeded = []
 
@@ -151,7 +151,7 @@ def convert_pdf(file):
     format_ = request.args.get('format', 'jpeg')
     suffix = '.{}'.format(format_.lower())
     created = {}
-    existing = []
+    existing = {}
 
     for index, blob in enumerate(pdfimages(blob, suffix=suffix)):
         QUOTA.alloc(len(blob))
@@ -160,12 +160,12 @@ def convert_pdf(file):
 
         try:
             file = File.add(name, CUSTOMER.id, blob)
-        except FileExists_:
-            existing.append(name)
-            continue
-
-        file.save()
-        created[name] = file.id
+        except FileExists_ as file_exists:
+            file = file_exists.file
+            existing[file.name] = file.id
+        else:
+            file.save()
+            created[name] = file.id
 
     return FileCreated(created=created, existing=existing)
 
