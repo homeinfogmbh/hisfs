@@ -9,8 +9,8 @@ from his import CUSTOMER, authenticated, authorized
 from wsgilib import Application, JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
-from hisfs.messages import NoSuchFile, FileCreated, FileExists, FileDeleted, \
-    QuotaExceeded, NotAPDFDocument
+from hisfs.messages import NoSuchFile, FileCreated, FilesCreated, FileExists, \
+    FileDeleted, QuotaExceeded, NotAPDFDocument
 from hisfs.orm import FileExists as FileExists_, File, Quota
 from hisfs.util import is_pdf, pdfimages
 
@@ -94,7 +94,7 @@ def post(name):
 def post_multi():
     """Adds a new files."""
 
-    added = {}
+    created = {}
     existing = {}
     too_large = []
     quota_exceeded = []
@@ -119,12 +119,10 @@ def post_multi():
             existing[file.name] = file.id
         else:
             file.save()
-            added[name] = file.id
+            created[name] = file.id
 
-    status = 400 if existing or too_large or quota_exceeded else 201
-    return JSON({
-        'added': added, 'existing': existing, 'too_large': too_large,
-        'quota_exceeded': quota_exceeded}, status=status)
+    return FilesCreated(
+        created, existing, too_large=too_large, quota_exceeded=quota_exceeded)
 
 
 @authenticated
@@ -167,7 +165,7 @@ def convert_pdf(file):
             file.save()
             created[name] = file.id
 
-    return FileCreated(created=created, existing=existing)
+    return FilesCreated(created, existing)
 
 
 ROUTES = (

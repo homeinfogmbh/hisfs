@@ -6,6 +6,7 @@ __all__ = [
     'FileSystemError',
     'NoSuchFile',
     'FileCreated',
+    'FilesCreated',
     'FileExists',
     'FileDeleted',
     'ReadError',
@@ -30,6 +31,17 @@ class FileCreated(FileSystemError):
     """Indicates that the respective file has been created."""
 
     STATUS = 201
+
+
+class FilesCreated(FileCreated):
+    """Indicates that the respective files hve been created."""
+
+    def __init__(self, files, existing, too_large=None, quota_exceeded=None):
+        """Sets the respective attributes."""
+        super().__init__(
+            status=400 if too_large or quota_exceeded else None, files=files,
+            existing=existing, too_large=too_large or (),
+            quota_exceeded=quota_exceeded or ())
 
 
 class FileExists(FileSystemError):
