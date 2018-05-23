@@ -39,8 +39,8 @@ def with_file(function):
     def wrapper(ident, *args, **kwargs):
         """Wraps the function."""
         try:
-            file = File.select().where(
-                (File.id == ident) & (File.customer == CUSTOMER.id)).get()
+            file = File.get(
+                (File.id == ident) & (File.customer == CUSTOMER.id))
         except File.DoesNotExist:
             raise NoSuchFile()
 
