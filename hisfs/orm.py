@@ -45,8 +45,8 @@ class FSModel(JSONModel):
 class File(FSModel):
     """Inode database model for the virtual filesystem."""
 
-    name = CharField(255, db_column='name')
-    customer = ForeignKeyField(Customer, db_column='customer')
+    name = CharField(255, column_name='name')
+    customer = ForeignKeyField(Customer, column_name='customer')
     _file = IntegerField(column_name='file')
 
     @classmethod
@@ -129,7 +129,7 @@ class File(FSModel):
 class Quota(FSModel):
     """Quota settings for a customer."""
 
-    customer = ForeignKeyField(Customer, db_column='customer')
+    customer = ForeignKeyField(Customer, column_name='customer')
     quota = BigIntegerField()   # Quota in bytes.
 
     @classmethod
