@@ -1,6 +1,6 @@
 """Errors of the FS."""
 
-from his.messages import locales, Message
+from his.messages import Message
 
 __all__ = [
     'FileSystemError',
@@ -17,8 +17,7 @@ __all__ = [
 class FileSystemError(Message):
     """Indicates errors within the file system."""
 
-    LOCALES = locales('/etc/his.d/locale/fs.ini')
-    ABSTRACT = True
+    LOCALES = '/etc/his.d/locale/fs.ini'
 
 
 class NoSuchFile(FileSystemError):
