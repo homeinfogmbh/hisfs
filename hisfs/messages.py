@@ -3,7 +3,6 @@
 from his.messages import Message
 
 __all__ = [
-    'FileSystemError',
     'NoSuchFile',
     'FileCreated',
     'FilesCreated',
@@ -14,25 +13,25 @@ __all__ = [
     'NotAPDFDocument']
 
 
-class FileSystemError(Message):
+class HISFSMessage(Message):
     """Indicates errors within the file system."""
 
-    LOCALES = '/etc/his.d/locale/fs.ini'
+    DOMAIN = 'hisfs'
 
 
-class NoSuchFile(FileSystemError):
+class NoSuchFile(HISFSMessage):
     """Indicates that the respective file does not exist."""
 
     STATUS = 404
 
 
-class FileCreated(FileSystemError):
+class FileCreated(HISFSMessage):
     """Indicates that the respective file has been created."""
 
     STATUS = 201
 
 
-class FilesCreated(FileCreated):
+class FilesCreated(HISFSMessage):
     """Indicates that the respective files hve been created."""
 
     def __init__(self, files, existing, too_large=None, quota_exceeded=None):
@@ -43,13 +42,13 @@ class FilesCreated(FileCreated):
             quota_exceeded=quota_exceeded or ())
 
 
-class FileExists(FileSystemError):
+class FileExists(HISFSMessage):
     """Indicates that the respective file already exists."""
 
     STATUS = 409
 
 
-class FileDeleted(FileSystemError):
+class FileDeleted(HISFSMessage):
     """Indicates that the respective file
     has successfully been deleted.
     """
@@ -57,19 +56,19 @@ class FileDeleted(FileSystemError):
     STATUS = 200
 
 
-class ReadError(FileSystemError):
+class ReadError(HISFSMessage):
     """Indicates that no data could be read from filedb."""
 
     STATUS = 500
 
 
-class QuotaExceeded(FileSystemError):
+class QuotaExceeded(HISFSMessage):
     """Indicates that the respective customer has exceeded their quota."""
 
     STATUS = 403
 
 
-class NotAPDFDocument(FileSystemError):
+class NotAPDFDocument(HISFSMessage):
     """Indicates that the respective file is not a PDF document."""
 
     STATUS = 400

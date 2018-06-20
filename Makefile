@@ -6,6 +6,7 @@ default: | pull clean install
 
 install:
 	@ ./setup.py install --record $(FILE_LIST)
+	@ install_locales
 
 uninstall:
 	@ while read FILE; do echo "Removing: $$FILE"; rm "$$FILE"; done < $(FILE_LIST)
