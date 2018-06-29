@@ -9,6 +9,7 @@ from his import CUSTOMER, authenticated, authorized
 from wsgilib import Application, JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
+from hisfs.hooks import run_delete_hooks
 from hisfs.messages import NoSuchFile, FileCreated, FilesCreated, FileExists, \
     FileDeleted, QuotaExceeded, NotAPDFDocument
 from hisfs.orm import FileExists as FileExists_, File, Quota
@@ -131,6 +132,7 @@ def post_multi():
 def delete(file):
     """Deletes the respective file."""
 
+    run_delete_hooks(file.id)
     file.delete_instance()
     return FileDeleted()
 
