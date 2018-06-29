@@ -1,5 +1,6 @@
 """File action hooks."""
 
+from importlib import import_module
 from logging import INFO, basicConfig, getLogger
 from traceback import format_exc
 
@@ -15,22 +16,20 @@ basicConfig(level=INFO, format=LOG_FORMAT)
 def _load_callable(string):
     """Loads the respective callable."""
 
-    module, *modules, callable_ = string.split('.')
+    module, callable_ = string.rsplit('.', maxsplit=1)
 
     try:
-        module = __import__(module)
+        module = import_module(module)
     except ImportError:
         LOGGER.error('No such module: %s.', module)
         raise
 
-    for module_ in modules:
-        try:
-            module = getattr(module, module_)
-        except AttributeError:
-            LOGGER.error('No module: %s in %s.', module_, module)
-            raise
+    try:
+        return getattr(module, callable_)
+    except AttributeError:
+        LOGGER.error('No callable %s in %s.', callable_, module)
+        raise
 
-    return getattr(module, callable_)
 
 
 def _run_hooks(hooks, ident):
