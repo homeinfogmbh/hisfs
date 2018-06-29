@@ -12,8 +12,8 @@ LOGGER = getLogger('hisfs.hooks')
 basicConfig(level=INFO, format=LOG_FORMAT)
 
 
-def _load_function(string):
-    """Loads the respective function."""
+def _load_callable(string):
+    """Loads the respective callable."""
 
     module_path, callable_name = string.rsplit('.', maxsplit=1)
 
@@ -35,12 +35,12 @@ def _run_hooks(hooks, ident):
 
     for hook in hooks:
         try:
-            function = _load_function(hook)
+            callable_ = _load_callable(hook)
         except (ImportError, AttributeError):
             continue
 
         try:
-            function(ident)
+            callable_(ident)
         except Exception as exception:
             LOGGER.error('Failed to run hook: %s\n%s.', hook, exception)
             LOGGER.debug(format_exc())
