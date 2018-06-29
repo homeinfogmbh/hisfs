@@ -34,6 +34,8 @@ def _run_hooks(hooks, ident):
     """Runs the respective hooks."""
 
     for hook in hooks:
+        LOGGER.info('Running hook: %s().', hook)
+
         try:
             callable_ = _load_callable(hook)
         except (ImportError, AttributeError):
