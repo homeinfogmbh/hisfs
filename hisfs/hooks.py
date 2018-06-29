@@ -15,19 +15,22 @@ basicConfig(level=INFO, format=LOG_FORMAT)
 def _load_callable(string):
     """Loads the respective callable."""
 
-    module_path, callable_name = string.rsplit('.', maxsplit=1)
+    package, *modules, callable_ = string.split('.')
 
     try:
-        module = __import__(module_path)
+        package = __import__(package)
     except ImportError:
-        LOGGER.error('No such module: %s.', module_path)
+        LOGGER.error('No such package: %s.', package)
         raise
 
-    try:
-        return getattr(module, callable_name)
-    except AttributeError:
-        LOGGER.error('No such callable: %s.', callable_name)
-        raise
+    for module in modules:
+        try:
+            package = getattr(package, module)
+        except AttributeError:
+            LOGGER.error('No module: %s in %s.', module, package)
+            raise
+
+    return getattr(package, callable_)
 
 
 def _run_hooks(hooks, ident):
