@@ -13,23 +13,29 @@ LOGGER = getLogger('hisfs.hooks')
 basicConfig(level=INFO, format=LOG_FORMAT)
 
 
+class LoadingError(Exception):
+    """Indicates an error while loading the respective callable."""
+
+    pass
+
+
 def _load_callable(string):
     """Loads the respective callable."""
 
-    module, callable_ = string.rsplit('.', maxsplit=1)
+    try:
+        module, callable_ = string.rsplit('.', maxsplit=1)
+    except ValueError:
+        raise LoadingError('Invalid python path: %s.' % string)
 
     try:
         module = import_module(module)
     except ImportError:
-        LOGGER.error('No such module: %s.', module)
-        raise
+        raise LoadingError('No such module: %s.' % module)
 
     try:
         return getattr(module, callable_)
     except AttributeError:
-        LOGGER.error('No callable %s in %s.', callable_, module)
-        raise
-
+        raise LoadingError('No callable %s in %s.' % (callable_, module))
 
 
 def _run_hooks(hooks, ident):
@@ -40,7 +46,8 @@ def _run_hooks(hooks, ident):
 
         try:
             callable_ = _load_callable(hook)
-        except (ImportError, AttributeError):
+        except LoadingError as loading_error:
+            LOGGER.error(loading_error)
             continue
 
         try:
