@@ -1,5 +1,6 @@
 """File action hooks."""
 
+from collections import namedtuple
 from importlib import import_module
 from logging import INFO, basicConfig, getLogger
 from traceback import format_exc
@@ -19,45 +20,60 @@ class LoadingError(Exception):
     pass
 
 
-def _load_callable(string):
-    """Loads the respective callable."""
-
-    try:
-        module, callable_ = string.rsplit('.', maxsplit=1)
-    except ValueError:
-        raise LoadingError('Invalid python path: %s.' % string)
-
-    try:
-        module = import_module(module)
-    except ImportError:
-        raise LoadingError('No such module: %s.' % module)
-
-    try:
-        return getattr(module, callable_)
-    except AttributeError:
-        raise LoadingError('No callable %s in %s.' % (callable_, module))
-
-
-def _run_hooks(hooks, ident):
-    """Runs the respective hooks."""
-
-    for hook in hooks:
-        LOGGER.info('Running hook: %s().', hook)
-
-        try:
-            callable_ = _load_callable(hook)
-        except LoadingError as loading_error:
-            LOGGER.error(loading_error)
-            continue
-
-        try:
-            callable_(ident)
-        except Exception as exception:
-            LOGGER.error('Failed to run hook: %s\n%s.', hook, exception)
-            LOGGER.debug(format_exc())
-
-
 def run_delete_hooks(ident):
     """Runs the respective deletion hooks."""
 
-    _run_hooks(HOOKS.get('on_delete', ()), ident)
+    for hook in Hook.load('on_delete'):
+        hook(ident)
+
+
+class Hook(namedtuple('Hook', ('name', 'package', 'module', 'function'))):
+    """Represents a hook."""
+
+    def __call__(self, ident):
+        """Runs the hook."""
+        LOGGER.info('Running hook: %s.', self)
+
+        try:
+            self.callable(ident)
+        except LoadingError as loading_error:
+            LOGGER.error(loading_error)
+        except Exception as exception:
+            LOGGER.error('Failed to run hook: %s\n%s.', self, exception)
+            LOGGER.debug(format_exc())
+
+    @classmethod
+    def from_dict(cls, dictionary):
+        """Loads the hook from the given dictionary."""
+        return cls(
+            dictionary.get('name'), dictionary.get('package'),
+            dictionary.get('module'), dictionary.get('function'))
+
+    @classmethod
+    def load(cls, event):
+        """Yields all hooks for the respective event."""
+        for hook in HOOKS.get(event, ()):
+            yield Hook.from_dict(hook)
+
+    @property
+    def python_path(self):
+        """Returns the python path."""
+        return '.'.join(node for node in self[1:] if node is not None)
+
+    @property
+    def callable(self):
+        """Loads the hook callable."""
+        try:
+            module, function = self.python_path.rsplit('.', maxsplit=1)
+        except ValueError:
+            raise LoadingError('Invalid python path: %s.' % self.python_path)
+
+        try:
+            module = import_module(module)
+        except ImportError:
+            raise LoadingError('No such module: %s.' % module)
+
+        try:
+            return getattr(module, function)
+        except AttributeError:
+            raise LoadingError('No member %s in %s.' % (function, module))
