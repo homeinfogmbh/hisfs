@@ -30,6 +30,8 @@ def run_delete_hooks(ident):
 class Hook(namedtuple('Hook', ('name', 'package', 'module', 'function'))):
     """Represents a hook."""
 
+    __slots__ = ()
+
     def __call__(self, ident):
         """Runs the hook."""
         LOGGER.info('Running hook: %s.', self)
