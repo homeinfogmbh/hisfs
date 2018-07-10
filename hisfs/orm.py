@@ -6,7 +6,7 @@ from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField, \
     BigIntegerField
 
 from filedb import FileError, add, delete, get, mimetype, sha256sum, size
-from homeinfo.crm import Customer
+from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
 from hisfs.config import CONFIG
