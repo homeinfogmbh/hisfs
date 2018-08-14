@@ -2,12 +2,12 @@
 
 from logging import getLogger
 
-from peewee import PrimaryKeyField, ForeignKeyField, IntegerField, CharField, \
+from peewee import AutoField, ForeignKeyField, IntegerField, CharField, \
     BigIntegerField
 
 from filedb import FileError, add, delete, get, mimetype, sha256sum, size
 from mdb import Customer
-from peeweeplus import MySQLDatabase, JSONModel
+from peeweeplus import MySQLDatabase, JSONModel, JSONField
 
 from hisfs.config import CONFIG
 from hisfs.messages import ReadError, QuotaExceeded
@@ -39,14 +39,14 @@ class FSModel(JSONModel):
         database = DATABASE
         schema = DATABASE.database
 
-    id = PrimaryKeyField()
+    id = JSONField(AutoField)
 
 
 class File(FSModel):
     """Inode database model for the virtual filesystem."""
 
-    name = CharField(255, column_name='name')
-    customer = ForeignKeyField(Customer, column_name='customer')
+    name = JSONField(CharField, 255, column_name='name')
+    customer = JSONField(ForeignKeyField, Customer, column_name='customer')
     _file = IntegerField(column_name='file')
 
     @classmethod
@@ -129,8 +129,8 @@ class File(FSModel):
 class Quota(FSModel):
     """Quota settings for a customer."""
 
-    customer = ForeignKeyField(Customer, column_name='customer')
-    quota = BigIntegerField()   # Quota in bytes.
+    customer = JSONField(ForeignKeyField, Customer, column_name='customer')
+    quota = JSONField(BigIntegerField)   # Quota in bytes.
 
     @classmethod
     def by_customer(cls, customer):
