@@ -55,7 +55,7 @@ def with_file(function):
 def list_():
     """Lists the respective files."""
 
-    return JSON([file.to_dict() for file in File.select().where(
+    return JSON([file.to_json() for file in File.select().where(
         File.customer == CUSTOMER.id)])
 
 
@@ -66,8 +66,9 @@ def get(file):
     """Returns the respective file."""
 
     if 'metadata' in request.args:
-        return JSON(file.to_dict())
-    elif 'named' in request.args:
+        return JSON(file.to_json())
+
+    if 'named' in request.args:
         return Binary(file.bytes, filename=file.name)
 
     return Binary(file.bytes)

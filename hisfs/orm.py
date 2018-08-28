@@ -113,14 +113,14 @@ class File(FSModel):
         return super().delete_instance(
             recursive=recursive, delete_nullable=delete_nullable)
 
-    def to_dict(self):
+    def to_json(self):
         """Returns a JSON-ish dictionary."""
-        dictionary = super().to_dict()
-        dictionary.update({
+        json = super().to_json()
+        json.update({
             'sha256sum': self.sha256sum,
             'mimetype': self.mimetype,
             'size': self.size})
-        return dictionary
+        return json
 
 
 class Quota(FSModel):
@@ -156,11 +156,11 @@ class Quota(FSModel):
 
         return True
 
-    def to_dict(self, **kwargs):
-        """Returns a JSON compliant dictionary."""
-        dictionary = super().to_dict(**kwargs)
-        dictionary.update({
+    def to_json(self, **kwargs):
+        """Returns a JSON-ish dictionary."""
+        json = super().to_json(**kwargs)
+        json.update({
             'quota': self.quota,
             'free': self.free,
             'used': self.used})
-        return dictionary
+        return json
