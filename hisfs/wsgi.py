@@ -5,8 +5,8 @@ from pathlib import Path
 from flask import request
 from werkzeug.local import LocalProxy
 
-from his import CUSTOMER, authenticated, authorized
-from wsgilib import Application, JSON, Binary
+from his import CUSTOMER, authenticated, authorized, Application
+from wsgilib import JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
 from hisfs.hooks import run_delete_hooks
@@ -24,7 +24,7 @@ from hisfs.util import is_pdf, pdfimages
 __all__ = ['APPLICATION']
 
 
-APPLICATION = Application('hisfs', cors=True, debug=True)
+APPLICATION = Application('hisfs', debug=True)
 
 
 def _get_quota():
