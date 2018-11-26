@@ -58,7 +58,7 @@ def with_file(function):
 @authenticated
 @authorized('hisfs')
 def list_():
-    """Lists the respective files."""
+    """Lists the customer's files."""
 
     return JSON([file.to_json() for file in File.select().where(
         File.customer == CUSTOMER.id)])
@@ -99,7 +99,7 @@ def post(name):
 @authenticated
 @authorized('hisfs')
 def post_multi():
-    """Adds a new files."""
+    """Adds multiple new files."""
 
     created = {}
     existing = {}
@@ -147,7 +147,7 @@ def delete(file):
 @authorized('hisfs')
 @with_file
 def convert_pdf(file):
-    """Converts the file."""
+    """Converts a PDF document into image files."""
 
     blob = file.bytes
 
