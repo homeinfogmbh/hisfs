@@ -49,7 +49,7 @@ class File(FSModel):
     @classmethod
     def add(cls, name, customer, bytes_, rename=False, *, suffix=0):
         """Adds the respective file."""
-        if suffix:
+        if rename and suffix:
             name += ' ({})'.format(suffix)
 
         try:
