@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from flask import request
-from werkzeug.local import LocalProxy
 
 from his import CUSTOMER, authenticated, authorized, Application
 from wsgilib import JSON, Binary
@@ -36,7 +35,10 @@ def _get_quota():
         return Quota(customer=CUSTOMER.id, quota=DEFAULT_QUOTA)
 
 
-QUOTA = LocalProxy(_get_quota)
+def qalloc(bytec):
+    """Attempts to allocate the respective amount of bytes."""
+
+    return _get_quota().alloc(bytec)
 
 
 def with_file(function):
@@ -85,10 +87,11 @@ def post(name):
     """Adds a new file."""
 
     data = request.get_data()
-    QUOTA.alloc(len(data))
+    rename = 'rename' in request.args
+    qalloc(len(data))
 
     try:
-        file = File.add(name, CUSTOMER.id, data)
+        file = File.add(name, CUSTOMER.id, data, rename=rename)
     except FileExists_ as file_exists:
         raise FileExists(id=file_exists.file.id)
 
@@ -101,6 +104,7 @@ def post(name):
 def post_multi():
     """Adds multiple new files."""
 
+    rename = 'rename' in request.args
     created = {}
     existing = {}
     too_large = []
@@ -114,13 +118,13 @@ def post_multi():
             continue
 
         try:
-            QUOTA.alloc(len(data))
+            qalloc(len(data))
         except QuotaExceeded:
             quota_exceeded.append(name)
             continue
 
         try:
-            file = File.add(name, CUSTOMER.id, data)
+            file = File.add(name, CUSTOMER.id, data, rename=rename)
         except FileExists_ as file_exists:
             file = file_exists.file
             existing[file.name] = file.id
@@ -160,7 +164,7 @@ def convert_pdf(file):
     existing = {}
 
     for index, blob in enumerate(pdfimages(blob, suffix=suffix)):
-        QUOTA.alloc(len(blob))
+        qalloc(len(blob))
         path = Path(file.name)
         name = path.stem + '-page{}'.format(index) + suffix
 

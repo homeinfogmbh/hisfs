@@ -47,8 +47,11 @@ class File(FSModel):
     _file = IntegerField(column_name='file')
 
     @classmethod
-    def add(cls, name, customer, bytes_):
+    def add(cls, name, customer, bytes_, rename=False, *, suffix=0):
         """Adds the respective file."""
+        if suffix:
+            name = name + ' ({})'.format(suffix)
+
         try:
             file = File.get((File.name == name) & (File.customer == customer))
         except cls.DoesNotExist:
@@ -58,6 +61,10 @@ class File(FSModel):
             file.bytes = bytes_
             file.save()
             return file
+
+        if rename:
+            return cls.add(
+                name, customer, bytes_, rename=rename, suffix=suffix+1)
 
         raise FileExists(file)
 
