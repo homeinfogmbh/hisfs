@@ -50,7 +50,7 @@ class File(FSModel):
     def add(cls, name, customer, bytes_, rename=False, *, suffix=0):
         """Adds the respective file."""
         if suffix:
-            name = name + ' ({})'.format(suffix)
+            name += ' ({})'.format(suffix)
 
         try:
             file = File.get((File.name == name) & (File.customer == customer))
