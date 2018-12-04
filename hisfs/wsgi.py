@@ -50,7 +50,7 @@ def with_file(function):
             file = File.get(
                 (File.id == ident) & (File.customer == CUSTOMER.id))
         except File.DoesNotExist:
-            raise NoSuchFile()
+            return NoSuchFile()
 
         return function(file, *args, **kwargs)
 
