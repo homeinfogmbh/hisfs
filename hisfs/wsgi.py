@@ -72,6 +72,15 @@ def list_():
 def get(file):
     """Returns the respective file."""
 
+    try:
+        resolution = request.args['thumbnail']
+    except KeyError:
+        pass
+    else:
+        size_x, size_y = resolution.split('x')
+        resolution = (int(size_x), int(size_y))
+        file = file.thumbnail(resolution)
+
     if 'metadata' in request.args:
         return JSON(file.to_json())
 
