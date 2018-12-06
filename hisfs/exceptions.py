@@ -1,7 +1,16 @@
 """Common exceptions."""
 
 
-__all__ = ['UnsupportedFileType', 'NoThumbnailRequired']
+__all__ = ['FileExists', 'UnsupportedFileType', 'NoThumbnailRequired']
+
+
+class FileExists(Exception):
+    """Indicates that a file with the respective name already exists."""
+
+    def __init__(self, file):
+        """Sets the existing file."""
+        super().__init__()
+        self.file = file
 
 
 class UnsupportedFileType(Exception):

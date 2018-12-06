@@ -10,27 +10,20 @@ from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
 from hisfs.config import CONFIG
-from hisfs.exceptions import UnsupportedFileType, NoThumbnailRequired
+from hisfs.exceptions import FileExists
+from hisfs.exceptions import UnsupportedFileType
+from hisfs.exceptions import NoThumbnailRequired
 from hisfs.messages import ReadError, QuotaExceeded
 from hisfs.thumbnails import gen_thumbnail
 
 
-__all__ = ['FileExists', 'File', 'Quota']
+__all__ = ['File', 'Quota']
 
 
 DATABASE = MySQLDatabase.from_config(CONFIG['db'])
 PATHSEP = '/'
 LOGGER = getLogger(__file__)
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
-
-
-class FileExists(Exception):
-    """Indicates that a file with the respective name already exists."""
-
-    def __init__(self, file):
-        """Sets the existing file."""
-        super().__init__()
-        self.file = file
 
 
 class FSModel(JSONModel):

@@ -8,6 +8,7 @@ from his import CUSTOMER, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
+from hisfs.exceptions import FileExists as FileExists_
 from hisfs.hooks import run_delete_hooks
 from hisfs.messages import FileCreated
 from hisfs.messages import FileDeleted
@@ -16,7 +17,7 @@ from hisfs.messages import FilesCreated
 from hisfs.messages import NoSuchFile
 from hisfs.messages import NotAPDFDocument
 from hisfs.messages import QuotaExceeded
-from hisfs.orm import FileExists as FileExists_, File, Quota
+from hisfs.orm import File, Quota
 from hisfs.util import is_pdf, pdfimages
 
 
