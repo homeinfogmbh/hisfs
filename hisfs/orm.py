@@ -80,15 +80,6 @@ class FileMixin:
         except FileError:
             raise ReadError()
 
-    def to_json(self):
-        """Returns a JSON-ish dictionary."""
-        json = super().to_json()
-        json.update({
-            'sha256sum': self.sha256sum,
-            'mimetype': self.mimetype,
-            'size': self.size})
-        return json
-
 
 class BasicFile(FSModel, FileMixin):
     """Common files model."""
@@ -102,6 +93,15 @@ class BasicFile(FSModel, FileMixin):
 
         return super().delete_instance(
             recursive=recursive, delete_nullable=delete_nullable)
+
+    def to_json(self):
+        """Returns a JSON-ish dictionary."""
+        json = super().to_json()
+        json.update({
+            'sha256sum': self.sha256sum,
+            'mimetype': self.mimetype,
+            'size': self.size})
+        return json
 
 
 class File(BasicFile):
