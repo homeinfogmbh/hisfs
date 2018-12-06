@@ -34,4 +34,6 @@ def gen_thumbnail(bytes_, resolution):
         image.save(thumbnail, 'JPEG')
         thumbnail.flush()
         thumbnail.seek(0)
-        return thumbnail.read()
+        bytes_ = thumbnail.read()
+
+    return (bytes_, thumbnail_size)

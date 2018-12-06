@@ -169,19 +169,18 @@ class Thumbnail(BasicFile):
 
         with suppress(cls.DoesNotExist):
             return cls.get(
-                (cls.file == file)
-                & (cls.size_x == size_x)
-                & (cls.size_y == size_y))
+                (cls.file == file) & (
+                    (cls.size_x == size_x)
+                    | (cls.size_y == size_y)))
 
         try:
-            bytes_ = gen_thumbnail(file.bytes, resolution)
+            bytes_, resolution = gen_thumbnail(file.bytes, resolution)
         except NoThumbnailRequired:
             return file
 
         thumbnail = cls()
         thumbnail.file = file
-        thumbnail.size_x = size_x
-        thumbnail.size_y = size_y
+        thumbnail.size_x, thumbnail.size_y = resolution
         thumbnail.bytes = bytes_
         thumbnail.save()
         return thumbnail
