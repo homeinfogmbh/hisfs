@@ -32,4 +32,6 @@ def gen_thumbnail(bytes_, resolution):
 
     with NamedTemporaryFile('w+b', suffix='.jpg') as thumbnail:
         image.save(thumbnail, 'JPEG')
+        thumbnail.flush()
+        thumbnail.seek(0)
         return thumbnail.read()
