@@ -1,5 +1,6 @@
 """File management module."""
 
+from contextlib import suppress
 from pathlib import Path
 
 from flask import request
@@ -8,7 +9,7 @@ from his import CUSTOMER, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
-from hisfs.exceptions import FileExists as FileExists_
+from hisfs.exceptions import FileExists as FileExists_, UnsupportedFileType
 from hisfs.hooks import run_delete_hooks
 from hisfs.messages import FileCreated
 from hisfs.messages import FileDeleted
@@ -80,7 +81,9 @@ def get(file):
     else:
         size_x, size_y = resolution.split('x')
         resolution = (int(size_x), int(size_y))
-        file = file.thumbnail(resolution)
+
+        with suppress(UnsupportedFileType):
+            file = file.thumbnail(resolution)
 
     if 'metadata' in request.args:
         return JSON(file.to_json())
