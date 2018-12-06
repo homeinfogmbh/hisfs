@@ -1,6 +1,5 @@
 """File management module."""
 
-from contextlib import suppress
 from pathlib import Path
 
 from flask import request
@@ -43,6 +42,23 @@ def qalloc(bytec):
     return _get_quota().alloc(bytec)
 
 
+def try_thumbnail(file):
+    """Attempts to return a thumbnail if desired."""
+
+    try:
+        resolution = request.args['thumbnail']
+    except KeyError:
+        return file
+
+    size_x, size_y = resolution.split('x')
+    resolution = (int(size_x), int(size_y))
+
+    try:
+        return file.thumbnail(resolution)
+    except UnsupportedFileType:
+        return file
+
+
 def with_file(function):
     """Decorator to translate file ID to actual file."""
 
@@ -74,16 +90,7 @@ def list_():
 def get(file):
     """Returns the respective file."""
 
-    try:
-        resolution = request.args['thumbnail']
-    except KeyError:
-        pass
-    else:
-        size_x, size_y = resolution.split('x')
-        resolution = (int(size_x), int(size_y))
-
-        with suppress(UnsupportedFileType):
-            file = file.thumbnail(resolution)
+    file = try_thumbnail(file)
 
     if 'metadata' in request.args:
         return JSON(file.to_json())
