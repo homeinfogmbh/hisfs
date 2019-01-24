@@ -16,26 +16,34 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Hand\n"
 
-msgid "NoSuchFile"
-msgstr "Datei nicht gefunden."
+#: messages.py:18
+msgid "The requested file does not exist."
+msgstr "Die gewünschte Datei wurde nicht gefunden."
 
-msgid "FileCreated"
-msgstr "Datei gespeichert."
+#: messages.py:19
+msgid "The file has been created."
+msgstr "Die Datei wurde gespeichert."
 
-msgid "FilesCreated"
-msgstr "Dateien gespeichert."
+#: messages.py:20
+msgid "The files have been created."
+msgstr "Die Dateien wurden gespeichert."
 
-msgid "FileExists"
-msgstr "Datei existiert bereits."
+#: messages.py:21
+msgid "The file already exists."
+msgstr "Die Datei existiert bereits."
 
-msgid "FileDeleted"
-msgstr "Datei gelöscht."
+#: messages.py:22
+msgid "The file has been deleted."
+msgstr "Die Datei wurde gelöscht."
 
-msgid "ReadError"
-msgstr "Lesefehler."
+#: messages.py:23
+msgid "Could not read file."
+msgstr "Konnte Datei nicht lesen."
 
-msgid "QuotaExceeded"
-msgstr "Kontingent überschritten."
+#: messages.py:24
+msgid "You have reached your disk space quota."
+msgstr "Sie haben Ihr Kontingent überschritten."
 
-msgid "NotAPDFDocument"
+#: messages.py:26
+msgid "The file is not a PDF document."
 msgstr "Die ausgewählte Datei ist kein PDF Dokument."
