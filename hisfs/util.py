@@ -3,7 +3,7 @@
 from tempfile import NamedTemporaryFile
 
 from mimeutil import mimetype
-from wand.image import Image
+from wand.image import Image    # pylint: disable=E0401
 
 __all__ = ['is_pdf', 'pdfimages']
 

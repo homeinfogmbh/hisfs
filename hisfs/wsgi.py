@@ -8,15 +8,19 @@ from his import CUSTOMER, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
-from hisfs.exceptions import FileExists as FileExists_, UnsupportedFileType
+from hisfs.exceptions import FileExists
+from hisfs.exceptions import QuotaExceeded
+from hisfs.exceptions import ReadError
+from hisfs.exceptions import UnsupportedFileType
 from hisfs.hooks import run_delete_hooks
-from hisfs.messages import FileCreated
-from hisfs.messages import FileDeleted
-from hisfs.messages import FileExists
-from hisfs.messages import FilesCreated
-from hisfs.messages import NoSuchFile
-from hisfs.messages import NotAPDFDocument
-from hisfs.messages import QuotaExceeded
+from hisfs.messages import FILE_CREATED
+from hisfs.messages import FILE_DELETED
+from hisfs.messages import FILE_EXISTS
+from hisfs.messages import FILES_CREATED
+from hisfs.messages import NO_SUCH_FILE
+from hisfs.messages import NOT_A_PDF_DOCUMENT
+from hisfs.messages import QUOTA_EXCEEDED
+from hisfs.messages import READ_ERROR
 from hisfs.orm import File, Quota
 from hisfs.util import is_pdf, pdfimages
 
@@ -39,7 +43,10 @@ def _get_quota():
 def qalloc(bytec):
     """Attempts to allocate the respective amount of bytes."""
 
-    return _get_quota().alloc(bytec)
+    try:
+        return _get_quota().alloc(bytec)
+    except QuotaExceeded:
+        raise QUOTA_EXCEEDED
 
 
 def try_thumbnail(file):
@@ -68,7 +75,7 @@ def with_file(function):
             file = File.get(
                 (File.id == ident) & (File.customer == CUSTOMER.id))
         except File.DoesNotExist:
-            return NoSuchFile()
+            return NO_SUCH_FILE
 
         return function(file, *args, **kwargs)
 
@@ -112,11 +119,11 @@ def post(name):
 
     try:
         file = File.add(name, CUSTOMER.id, data, rename=rename)
-    except FileExists_ as file_exists:
-        raise FileExists(id=file_exists.file.id)
+    except FileExists as file_exists:
+        raise FILE_EXISTS.update(id=file_exists.file.id)
 
     file.save()
-    return FileCreated(id=file.id)
+    return FILE_CREATED.update(id=file.id)
 
 
 @authenticated
@@ -138,22 +145,24 @@ def post_multi():
             continue
 
         try:
-            qalloc(len(data))
+            _get_quota().alloc(len(data))
         except QuotaExceeded:
             quota_exceeded.append(name)
             continue
 
         try:
             file = File.add(name, CUSTOMER.id, data, rename=rename)
-        except FileExists_ as file_exists:
+        except FileExists as file_exists:
             file = file_exists.file
             existing[file.name] = file.id
         else:
             file.save()
             created[name] = file.id
 
-    return FilesCreated(
-        created, existing, too_large=too_large, quota_exceeded=quota_exceeded)
+    status = 400 if (too_large or quota_exceeded) else 200
+    return FILES_CREATED.update(
+        created=created, existing=existing, too_large=too_large,
+        quota_exceeded=quota_exceeded, status=status)
 
 
 @authenticated
@@ -164,7 +173,7 @@ def delete(file):
 
     run_delete_hooks(file.id)
     file.delete_instance()
-    return FileDeleted()
+    return FILE_DELETED
 
 
 @authenticated
@@ -176,7 +185,7 @@ def convert_pdf(file):
     blob = file.bytes
 
     if not is_pdf(blob):
-        raise NotAPDFDocument()
+        raise NOT_A_PDF_DOCUMENT
 
     format_ = request.args.get('format', 'jpeg')
     suffix = '.{}'.format(format_.lower())
@@ -190,14 +199,21 @@ def convert_pdf(file):
 
         try:
             file = File.add(name, CUSTOMER.id, blob)
-        except FileExists_ as file_exists:
+        except FileExists as file_exists:
             file = file_exists.file
             existing[file.name] = file.id
         else:
             file.save()
             created[name] = file.id
 
-    return FilesCreated(created, existing)
+    return FILES_CREATED.update(created=created, existing=existing)
+
+
+@APPLICATION.errorhandler(ReadError)
+def _handle_read_error(_):
+    """Returns a read error message."""
+
+    return READ_ERROR
 
 
 ROUTES = (

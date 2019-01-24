@@ -17,8 +17,6 @@ basicConfig(level=INFO, format=LOG_FORMAT)
 class LoadingError(Exception):
     """Indicates an error while loading the respective callable."""
 
-    pass
-
 
 def run_delete_hooks(ident):
     """Runs the respective deletion hooks."""
@@ -37,10 +35,10 @@ class Hook(namedtuple('Hook', ('name', 'package', 'module', 'function'))):
         LOGGER.info('Running hook: %s.', self)
 
         try:
-            self.callable(ident)
+            self.callable(ident)    # pylint: disable=E1102
         except LoadingError as loading_error:
             LOGGER.error(loading_error)
-        except Exception as exception:
+        except Exception as exception:  # pylint: disable=W0703
             LOGGER.error('Failed to run hook: %s\n%s.', self, exception)
             LOGGER.debug(format_exc())
 

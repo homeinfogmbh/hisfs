@@ -1,7 +1,12 @@
 """Common exceptions."""
 
 
-__all__ = ['FileExists', 'UnsupportedFileType', 'NoThumbnailRequired']
+__all__ = [
+    'FileExists',
+    'UnsupportedFileType',
+    'NoThumbnailRequired',
+    'QuotaExceeded',
+    'ReadError']
 
 
 class FileExists(Exception):
@@ -16,12 +21,16 @@ class FileExists(Exception):
 class UnsupportedFileType(Exception):
     """Indicates that the respective file is not an image."""
 
-    pass    # pylint: disable=W0107
-
 
 class NoThumbnailRequired(Exception):
     """Indicates that the original image is of equal
     size or smaller than the requested thumbnail.
     """
 
-    pass    # pylint: disable=W0107
+
+class QuotaExceeded(Exception):
+    """Indicates that the customer's disk space quota has been exceeded."""
+
+
+class ReadError(Exception):
+    """Indicates an error reading the file data."""

@@ -13,7 +13,8 @@ from hisfs.config import CONFIG
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.exceptions import NoThumbnailRequired
-from hisfs.messages import ReadError, QuotaExceeded
+from hisfs.exceptions import QuotaExceeded
+from hisfs.exceptions import ReadError
 from hisfs.thumbnails import gen_thumbnail
 
 
@@ -29,8 +30,7 @@ IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 class FSModel(JSONModel):
     """Basic immobit model."""
 
-    class Meta:
-        """Configures database and schema."""
+    class Meta:     # pylint: disable=C0111,R0903
         database = DATABASE
         schema = DATABASE.database
 
@@ -104,7 +104,7 @@ class BasicFile(FSModel, FileMixin):
         return json
 
 
-class File(BasicFile):
+class File(BasicFile):  # pylint: disable=R0901
     """Inode database model for the virtual filesystem."""
 
     name = CharField(255, column_name='name')
@@ -154,7 +154,7 @@ class File(BasicFile):
             recursive=recursive, delete_nullable=delete_nullable)
 
 
-class Thumbnail(BasicFile):
+class Thumbnail(BasicFile):     # pylint: disable=R0901
     """An image thumbnail."""
 
     file = ForeignKeyField(File, column_name='file', backref='thumbnails')
