@@ -67,10 +67,12 @@ def try_thumbnail(file):
 
 
 def with_file(function):
-    """Decorator to translate file ID to actual file."""
+    """Decorator to translate file ID to an actual file record."""
 
     def wrapper(ident, *args, **kwargs):
-        """Wraps the function."""
+        """Calls the original function with
+        the file record as first argument.
+        """
         condition = File.id == ident
 
         if not SESSION.account.root:
