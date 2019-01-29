@@ -4,7 +4,7 @@ from pathlib import Path
 
 from flask import request
 
-from his import CUSTOMER, authenticated, authorized, Application
+from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA
