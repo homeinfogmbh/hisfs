@@ -71,9 +71,13 @@ def with_file(function):
 
     def wrapper(ident, *args, **kwargs):
         """Wraps the function."""
+        condition = File.id == ident
+
+        if not SESSION.account.root:
+            condition &= File.customer == CUSTOMER.id
+
         try:
-            file = File.get(
-                (File.id == ident) & (File.customer == CUSTOMER.id))
+            file = File.get(condition)
         except File.DoesNotExist:
             return NO_SUCH_FILE
 
