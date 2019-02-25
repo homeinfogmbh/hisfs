@@ -5,7 +5,14 @@ from logging import getLogger
 
 from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
 
-from filedb import FileError, add, delete, get, mimetype, sha256sum, size
+from filedb import FileError
+from filedb import add
+from filedb import delete
+from filedb import get
+from filedb import mimetype
+from filedb import sha256sum
+from filedb import size
+from filedb import stream
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
@@ -77,6 +84,13 @@ class FileMixin:
         """Returns the size in bytes."""
         try:
             return size(self._file)
+        except FileError:
+            raise ReadError()
+
+    def stream(self, chunk_size=4096):
+        """Yields byte chunks."""
+        try:
+            return stream(self._file, chunk_size=chunk_size)
         except FileError:
             raise ReadError()
 
