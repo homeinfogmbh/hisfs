@@ -22,6 +22,7 @@ from hisfs.exceptions import UnsupportedFileType
 from hisfs.exceptions import NoThumbnailRequired
 from hisfs.exceptions import QuotaExceeded
 from hisfs.exceptions import ReadError
+from hisfs.io import READ, FileContext
 from hisfs.thumbnails import gen_thumbnail
 
 
@@ -93,6 +94,10 @@ class FileMixin:
             return stream(self._file, chunk_size=chunk_size)
         except FileError:
             raise ReadError()
+
+    def open(self, mode=READ, *, chunk_size=4096):
+        """Opens the file for reading."""
+        return FileContext(mode, self, chunk_size=chunk_size)
 
 
 class BasicFile(FSModel, FileMixin):
