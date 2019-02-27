@@ -132,7 +132,7 @@ class File(BasicFile):  # pylint: disable=R0901
             name += ' ({})'.format(suffix)
 
         try:
-            file = File.get((File.name == name) & (File.customer == customer))
+            file = cls.get((cls.name == name) & (cls.customer == customer))
         except cls.DoesNotExist:
             file = cls()
             file.name = name
