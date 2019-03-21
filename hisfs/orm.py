@@ -1,7 +1,6 @@
 """ORM models."""
 
 from contextlib import suppress
-from logging import getLogger
 
 from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
 
@@ -16,7 +15,7 @@ from filedb import stream
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
-from hisfs.config import CONFIG
+from hisfs.config import CONFIG, LOGGER
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.exceptions import NoThumbnailRequired
@@ -30,7 +29,6 @@ __all__ = ['File', 'Quota']
 
 DATABASE = MySQLDatabase.from_config(CONFIG['db'])
 PATHSEP = '/'
-LOGGER = getLogger(__file__)
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
 

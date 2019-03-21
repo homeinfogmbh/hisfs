@@ -5,6 +5,9 @@ from tempfile import TemporaryFile
 from mimeutil import mimetype
 from wand.image import Image    # pylint: disable=E0401
 
+from hisfs.config import LOGGER
+
+
 __all__ = ['is_pdf', 'pdfimages']
 
 
@@ -18,7 +21,9 @@ def pdfimages(blob, format, resolution=300):    # pylint: disable=W0622
     """Yields pages as images from a PDF file."""
 
     with Image(blob=blob, resolution=resolution) as pdf:
-        for page in pdf.sequence:
+        for num, page in enumerate(pdf.sequence):
+            LOGGER.info('Converting page #%i.', num)
+
             with page.clone() as image:
                 image.format = format
 
