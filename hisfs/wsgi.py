@@ -199,8 +199,7 @@ def convert_pdf(file):
     suffix = '.{}'.format(frmt.lower())
     stem = Path(file.name).stem
     images = pdfimages(bytes_, frmt)
-    created = {}
-    existing = {}
+    pages = []
 
     for index, bytes_ in enumerate(images, start=1):
         qalloc(len(bytes_))
@@ -210,12 +209,12 @@ def convert_pdf(file):
             file = File.add(name, CUSTOMER.id, bytes_)
         except FileExists as file_exists:
             file = file_exists.file
-            existing[file.name] = file.id
         else:
             file.save()
-            created[name] = file.id
 
-    return FILES_CREATED.update(created=created, existing=existing)
+        pages.append(file.id)
+
+    return FILES_CREATED.update(pages=pages)
 
 
 @APPLICATION.before_first_request
