@@ -37,9 +37,10 @@ def gen_thumbnail(bytes_, resolution, mimetype):
     thumbnail_size = _get_new_resolution(image.size, resolution)
     image.thumbnail(thumbnail_size, Image.ANTIALIAS)
     suffix = guess_extension(mimetype) or '.jpg'
+    frmt = suffix[1:].upper()
 
     with NamedTemporaryFile('w+b', suffix=suffix) as thumbnail:
-        image.save(thumbnail, 'JPEG')
+        image.save(thumbnail, frmt)
         thumbnail.flush()
         thumbnail.seek(0)
         bytes_ = thumbnail.read()
