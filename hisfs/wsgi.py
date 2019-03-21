@@ -1,5 +1,6 @@
-"""File management module."""
-
+"""File management modul
+e."""
+from logging import INFO, basicConfig
 from pathlib import Path
 
 from flask import request
@@ -7,7 +8,7 @@ from flask import request
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
-from hisfs.config import DEFAULT_QUOTA
+from hisfs.config import DEFAULT_QUOTA, LOG_FORMAT
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import QuotaExceeded
 from hisfs.exceptions import ReadError
@@ -214,6 +215,13 @@ def convert_pdf(file):
             created[name] = file.id
 
     return FILES_CREATED.update(created=created, existing=existing)
+
+
+@APPLICATION.before_first_request
+def init():
+    """Initializes the app."""
+
+    basicConfig(level=INFO, format=LOG_FORMAT)
 
 
 @APPLICATION.errorhandler(ReadError)
