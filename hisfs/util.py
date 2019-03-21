@@ -21,7 +21,7 @@ def pdfimages(blob, format, resolution=300):    # pylint: disable=W0622
     """Yields pages as images from a PDF file."""
 
     with Image(blob=blob, resolution=resolution) as pdf:
-        for num, page in enumerate(pdf.sequence):
+        for num, page in enumerate(pdf.sequence, start=1):
             LOGGER.info('Converting page #%i.', num)
 
             with page.clone() as image:
