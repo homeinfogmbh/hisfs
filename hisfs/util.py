@@ -21,6 +21,7 @@ def pdfimages(blob, format, resolution=300):    # pylint: disable=W0622
         for page in pdf.sequence:
             with page.clone() as image:
                 with TemporaryFile(mode='w+b') as tmp:
+                    print('DEBUG:' type(image), image, flush=True)
                     image.save(tmp, format)
                     tmp.flush()
                     tmp.seek(0)
