@@ -29,6 +29,7 @@ __all__ = ['APPLICATION']
 
 
 APPLICATION = Application('hisfs', debug=True)
+DEFAULT_FORMAT = 'png'
 
 
 def _get_quota():
@@ -193,7 +194,7 @@ def convert_pdf(file):
     if not is_pdf(blob):
         raise NOT_A_PDF_DOCUMENT
 
-    format_ = request.args.get('format', 'jpeg')
+    format_ = request.args.get('format', DEFAULT_FORMAT)
     suffix = '.{}'.format(format_.lower())
     created = {}
     existing = {}
