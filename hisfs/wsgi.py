@@ -190,23 +190,24 @@ def delete(file):
 def convert_pdf(file):
     """Converts a PDF document into image files."""
 
-    blob = file.bytes
+    bytes_ = file.bytes
 
-    if not is_pdf(blob):
+    if not is_pdf(bytes_):
         raise NOT_A_PDF_DOCUMENT
 
     frmt = request.args.get('format', DEFAULT_FORMAT).upper()
     suffix = '.{}'.format(frmt.lower())
+    stem = Path(file.name).stem
+    images = pdfimages(bytes_, frmt)
     created = {}
     existing = {}
 
-    for index, blob in enumerate(pdfimages(blob, frmt)):
-        qalloc(len(blob))
-        path = Path(file.name)
-        name = path.stem + '-page{}'.format(index) + suffix
+    for index, bytes_ in enumerate(images, start=1):
+        qalloc(len(bytes_))
+        name = stem + '-page{}'.format(index) + suffix
 
         try:
-            file = File.add(name, CUSTOMER.id, blob)
+            file = File.add(name, CUSTOMER.id, bytes_)
         except FileExists as file_exists:
             file = file_exists.file
             existing[file.name] = file.id
