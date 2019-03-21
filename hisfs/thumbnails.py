@@ -12,10 +12,10 @@ from hisfs.exceptions import NoThumbnailRequired
 __all__ = ['gen_thumbnail']
 
 
-def _get_new_resolution(old_resolution, desired_resolution):
+def _get_new_resolution(original_resolution, desired_resolution):
     """Returns a new ewsolution with kept aspect ratio."""
 
-    current_x, current_y = old_resolution
+    current_x, current_y = original_resolution
     max_x, max_y = desired_resolution
     fac_x = max_x / current_x
     fac_y = max_y / current_y
