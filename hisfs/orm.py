@@ -183,12 +183,12 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
 
         with suppress(cls.DoesNotExist):
             return cls.get(
-                (cls.file == file) & (
-                    (cls.size_x == size_x)
-                    | (cls.size_y == size_y)))
+                (cls.file == file)
+                & ((cls.size_x == size_x) | (cls.size_y == size_y)))
 
         try:
-            bytes_, resolution = gen_thumbnail(file.bytes, resolution)
+            bytes_, resolution = gen_thumbnail(
+                file.bytes, resolution, file.mimetype)
         except NoThumbnailRequired:
             return file
 
