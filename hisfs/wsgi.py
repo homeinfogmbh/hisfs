@@ -194,12 +194,12 @@ def convert_pdf(file):
     if not is_pdf(blob):
         raise NOT_A_PDF_DOCUMENT
 
-    format_ = request.args.get('format', DEFAULT_FORMAT)
-    suffix = '.{}'.format(format_.lower())
+    frmt = request.args.get('format', DEFAULT_FORMAT).upper()
+    suffix = '.{}'.format(frmt.lower())
     created = {}
     existing = {}
 
-    for index, blob in enumerate(pdfimages(blob, suffix=suffix)):
+    for index, blob in enumerate(pdfimages(blob, frmt)):
         qalloc(len(blob))
         path = Path(file.name)
         name = path.stem + '-page{}'.format(index) + suffix
