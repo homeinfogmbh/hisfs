@@ -12,6 +12,9 @@ from hisfs.exceptions import NoThumbnailRequired
 __all__ = ['gen_thumbnail']
 
 
+FORMAT_TRANSITIONS = {'JPE': 'JPEG', 'JPG': 'JPEG'}
+
+
 def _get_new_resolution(original_resolution, desired_resolution):
     """Returns a new ewsolution with kept aspect ratio."""
 
@@ -36,8 +39,9 @@ def gen_thumbnail(bytes_, resolution, mimetype):
     image = Image.open(bytes_io)
     thumbnail_size = _get_new_resolution(image.size, resolution)
     image.thumbnail(thumbnail_size, Image.ANTIALIAS)
-    suffix = guess_extension(mimetype) or '.jpeg'
+    suffix = guess_extension(mimetype) or '.jpg'
     frmt = suffix[1:].upper()
+    frmt = FORMAT_TRANSITIONS.get(frmt, frmt)
 
     with NamedTemporaryFile('w+b', suffix=suffix) as thumbnail:
         image.save(thumbnail, frmt)
