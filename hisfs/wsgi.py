@@ -232,10 +232,11 @@ def _handle_read_error(_):
 
 
 ROUTES = (
-    ('GET', '/', list_, 'list_files'),
-    ('GET', '/<int:ident>', get, 'get_file'),
-    ('POST', '/', post_multi, 'post_files'),
-    ('POST', '/<name>', post, 'post_file'),
-    ('PATCH', '/<int:ident>', convert_pdf, 'convert_pdf'),
-    ('DELETE', '/<int:ident>', delete, 'delete_file'))
+    ('GET', '/', list_),
+    ('GET', '/<int:ident>', get),
+    ('POST', '/', post_multi),
+    ('POST', '/<name>', post),
+    ('PATCH', '/<int:ident>', convert_pdf),
+    ('DELETE', '/<int:ident>', delete)
+)
 APPLICATION.add_routes(ROUTES)
