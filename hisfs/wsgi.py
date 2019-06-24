@@ -203,7 +203,7 @@ def convert_pdf(file):
 
     for index, bytes_ in enumerate(images, start=1):
         qalloc(len(bytes_))
-        name = stem + '-page{}'.format(index) + suffix
+        name = stem + f'-page{index}' + suffix
 
         try:
             file = File.add(name, CUSTOMER.id, bytes_)
@@ -232,10 +232,11 @@ def _handle_read_error(_):
 
 
 ROUTES = (
-    ('GET', '/', list_, 'list_files'),
-    ('GET', '/<int:ident>', get, 'get_file'),
-    ('POST', '/', post_multi, 'post_files'),
-    ('POST', '/<name>', post, 'post_file'),
-    ('PATCH', '/<int:ident>', convert_pdf, 'convert_pdf'),
-    ('DELETE', '/<int:ident>', delete, 'delete_file'))
+    ('GET', '/', list_),
+    ('GET', '/<int:ident>', get),
+    ('POST', '/', post_multi),
+    ('POST', '/<name>', post),
+    ('PATCH', '/<int:ident>', convert_pdf),
+    ('DELETE', '/<int:ident>', delete)
+)
 APPLICATION.add_routes(ROUTES)
