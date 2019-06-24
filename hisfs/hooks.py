@@ -68,16 +68,11 @@ class Hook(NamedTuple):
     def callable(self):
         """Loads the hook callable."""
         try:
-            module, function = self.python_path.rsplit('.', maxsplit=1)
-        except ValueError:
-            raise LoadingError('Invalid python path: %s.' % self.python_path)
-
-        try:
-            module = import_module(module)
+            module = import_module(f'{self.module}.{self.function}')
         except ImportError:
             raise LoadingError('No such module: %s.' % module)
 
         try:
-            return getattr(module, function)
+            return getattr(module, self.function)
         except AttributeError:
-            raise LoadingError('No member %s in %s.' % (function, module))
+            raise LoadingError('No member %s in %s.' % (self.function, module))
