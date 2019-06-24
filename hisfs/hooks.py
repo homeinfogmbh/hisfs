@@ -1,11 +1,12 @@
 """File action hooks."""
 
-from collections import namedtuple
 from importlib import import_module
 from logging import INFO, basicConfig, getLogger
 from traceback import format_exc
+from typing import NamedTuple
 
 from hisfs.config import LOG_FORMAT, HOOKS
+
 
 __all__ = ['run_delete_hooks']
 
@@ -25,10 +26,13 @@ def run_delete_hooks(ident):
         hook(ident)
 
 
-class Hook(namedtuple('Hook', ('name', 'package', 'module', 'function'))):
+class Hook(NamedTuple):
     """Represents a hook."""
 
-    __slots__ = ()
+    name: str
+    package: str
+    module: str
+    function: str
 
     def __call__(self, ident):
         """Runs the hook."""
@@ -58,7 +62,7 @@ class Hook(namedtuple('Hook', ('name', 'package', 'module', 'function'))):
     @property
     def python_path(self):
         """Returns the python path."""
-        return '.'.join(node for node in self[1:] if node is not None)
+        return f'{self.package}.{self.module}.{self.function}'
 
     @property
     def callable(self):
