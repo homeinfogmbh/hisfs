@@ -56,13 +56,8 @@ class Hook(NamedTuple):
     @classmethod
     def load(cls, event):
         """Yields all hooks for the respective event."""
-        for hook in HOOKS.get(event, ()):
+        for hook in HOOKS.get(event) or ():
             yield Hook.from_dict(hook)
-
-    @property
-    def python_path(self):
-        """Returns the python path."""
-        return f'{self.package}.{self.module}.{self.function}'
 
     @property
     def callable(self):
