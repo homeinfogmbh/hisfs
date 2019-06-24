@@ -1,6 +1,7 @@
 """ORM models."""
 
 from contextlib import suppress
+from pathlib import Path
 
 from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
 
@@ -127,7 +128,8 @@ class File(BasicFile):  # pylint: disable=R0901
     def add(cls, name, customer, bytes_, rename=False, *, suffix=0):
         """Adds the respective file."""
         if rename and suffix:
-            name += ' ({})'.format(suffix)
+            path = Path(name)
+            name = path.stem + f' ({suffix})' + path.suffix
 
         try:
             file = cls.get((cls.name == name) & (cls.customer == customer))
