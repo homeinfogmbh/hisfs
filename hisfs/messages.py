@@ -22,3 +22,4 @@ READ_ERROR = JSONMessage('Could not read file.', status=500)
 QUOTA_EXCEEDED = JSONMessage(
     'You have reached your disk space quota.', status=403)
 NOT_A_PDF_DOCUMENT = JSONMessage('The file is not a PDF document.', status=400)
+CURRUPT_PDF = JSONMessage('The PDF document is currupted.', status=406)

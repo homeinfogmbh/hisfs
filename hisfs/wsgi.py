@@ -4,6 +4,7 @@ from logging import INFO, basicConfig
 from pathlib import Path
 
 from flask import request
+from wand.exceptions import CorruptImageError
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
@@ -14,6 +15,7 @@ from hisfs.exceptions import QuotaExceeded
 from hisfs.exceptions import ReadError
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.hooks import run_delete_hooks
+from hisfs.messages import CURRUPT_PDF
 from hisfs.messages import FILE_CREATED
 from hisfs.messages import FILE_DELETED
 from hisfs.messages import FILE_EXISTS
@@ -198,7 +200,12 @@ def convert_pdf(file):
     frmt = request.args.get('format', DEFAULT_FORMAT).upper()
     suffix = '.{}'.format(frmt.lower())
     stem = Path(file.name).stem
-    images = pdfimages(bytes_, frmt)
+
+    try:
+        images = pdfimages(bytes_, frmt)
+    except CorruptImageError:
+        raise CURRUPT_PDF
+
     pages = []
 
     for index, bytes_ in enumerate(images, start=1):
