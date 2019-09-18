@@ -60,7 +60,7 @@ class FileMixin:
         except FileError as file_error:
             LOGGER.error(file_error)
 
-        self._file = add(bytes_)
+        self._file = add(bytes_)['id']
 
     @property
     def sha256sum(self):
