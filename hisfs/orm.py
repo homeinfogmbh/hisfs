@@ -148,6 +148,11 @@ class File(BasicFile):  # pylint: disable=R0901
         raise FileExists(file)
 
     @property
+    def file(self):
+        """Returns the filedb ID."""
+        return self._file
+
+    @property
     def is_image(self):
         """Determines whether this file is an image."""
         return self.mimetype in IMAGE_MIMETYPES
