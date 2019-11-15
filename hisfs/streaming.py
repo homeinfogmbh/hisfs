@@ -1,7 +1,5 @@
 """File streaming."""
 
-from functools import partial
-
 from flask import request, Response
 
 from hisfs.messages import INVALID_CHUNK_SIZE
