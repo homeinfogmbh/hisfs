@@ -1,8 +1,8 @@
 """File streaming."""
 
-from flask import request, Response
+from functools import partial
 
-from filedb import NamedFileStream
+from flask import request, Response
 
 from hisfs.messages import INVALID_CHUNK_SIZE
 
@@ -37,8 +37,8 @@ class FileStream(Response):     # pylint: disable=R0901
 
     def __init__(self, file, chunk_size=4096):
         """Sets the file, chunk size and status code."""
-        stream = NamedFileStream(file.stream, chunk_size=chunk_size)
-        super().__init__(stream, mimetype=file.mimetype)
+        streamfunc = partial(file.stream, chunk_size)
+        super().__init__(streamfunc, mimetype=file.mimetype)
 
     @classmethod
     def from_request_args(cls, file):
