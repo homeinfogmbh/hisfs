@@ -8,7 +8,10 @@ from hisfs.messages import INVALID_CHUNK_SIZE
 __all__ = ['FileStream']
 
 
-ALLOWED_CHUNK_SIZES = range(4096, 4096 * 1024 * 1024 + 1)
+MIN_CHUNK_SIZE = 4096
+DEFAULT_CHUNK_SIZE = MIN_CHUNK_SIZE * 1024
+MAX_CHUNK_SIZE = DEFAULT_CHUNK_SIZE * 1024
+ALLOWED_CHUNK_SIZES = range(MIN_CHUNK_SIZE, MAX_CHUNK_SIZE)
 
 
 def get_chunk_size():
@@ -17,7 +20,7 @@ def get_chunk_size():
     try:
         chunk_size = request.args['chunk_size']
     except KeyError:
-        return min(ALLOWED_CHUNK_SIZES)
+        return DEFAULT_CHUNK_SIZE
 
     try:
         chunk_size = int(chunk_size)
