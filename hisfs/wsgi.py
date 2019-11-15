@@ -109,7 +109,7 @@ def get(file):
     file = try_thumbnail(file)
 
     if 'stream' in request.args:
-        return FileStream(file)
+        return FileStream.from_request_args(file)
 
     if 'metadata' in request.args:
         return JSON(file.to_json())

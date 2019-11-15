@@ -10,7 +10,9 @@ __all__ = [
     'FILE_DELETED',
     'READ_ERROR',
     'QUOTA_EXCEEDED',
-    'NOT_A_PDF_DOCUMENT']
+    'NOT_A_PDF_DOCUMENT',
+    'INVALID_CHUNK_SIZE'
+]
 
 
 NO_SUCH_FILE = JSONMessage('The requested file does not exist.', status=404)
@@ -23,3 +25,4 @@ QUOTA_EXCEEDED = JSONMessage(
     'You have reached your disk space quota.', status=403)
 NOT_A_PDF_DOCUMENT = JSONMessage('The file is not a PDF document.', status=400)
 CURRUPT_PDF = JSONMessage('The PDF document is currupted.', status=406)
+INVALID_CHUNK_SIZE = JSONMessage('Invalid chunk size.', status=400)
