@@ -1,7 +1,7 @@
 """HIS module providing a file system."""
 
 from hisfs.orm import File
-from hisfs.streaming import NamedFileStream
+from hisfs.streaming import FileStream
 
 
-__all__ = ['File', 'NamedFileStream']
+__all__ = ['File', 'FileStream']

@@ -23,7 +23,7 @@ from hisfs.messages import NOT_A_PDF_DOCUMENT
 from hisfs.messages import QUOTA_EXCEEDED
 from hisfs.messages import READ_ERROR
 from hisfs.orm import File, Quota
-from hisfs.streaming import NamedFileStream
+from hisfs.streaming import FileStream
 from hisfs.util import is_pdf, pdfimages
 
 
@@ -91,13 +91,6 @@ def with_file(function):
     return wrapper
 
 
-def stream_file(file):
-    """Returns a file stream generator."""
-
-    for chunk in NamedFileStream.from_hisfs(file):
-        yield chunk
-
-
 @authenticated
 @authorized('hisfs')
 def list_():
@@ -116,7 +109,7 @@ def get(file):
     file = try_thumbnail(file)
 
     if 'stream' in request.args:
-        return stream_file(file)
+        return FileStream(file)
 
     if 'metadata' in request.args:
         return JSON(file.to_json())
