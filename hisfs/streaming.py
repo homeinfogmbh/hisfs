@@ -37,8 +37,7 @@ class FileStream(Response):     # pylint: disable=R0901
 
     def __init__(self, file, chunk_size=4096):
         """Sets the file, chunk size and status code."""
-        streamfunc = partial(file.stream, chunk_size)
-        super().__init__(streamfunc, mimetype=file.mimetype)
+        super().__init__(file.stream(chunk_size), mimetype=file.mimetype)
 
     @classmethod
     def from_request_args(cls, file):
