@@ -11,7 +11,6 @@ from wsgilib import JSON, Binary
 from hisfs.config import DEFAULT_QUOTA, LOG_FORMAT
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import QuotaExceeded
-from hisfs.exceptions import ReadError
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.hooks import run_delete_hooks
 from hisfs.messages import FILE_CREATED
@@ -227,7 +226,8 @@ def init():
     basicConfig(level=INFO, format=LOG_FORMAT)
 
 
-@APPLICATION.errorhandler(ReadError)
+@APPLICATION.errorhandler(FileNotFoundError)
+@APPLICATION.errorhandler(PermissionError)
 def _handle_read_error(_):
     """Returns a read error message."""
 

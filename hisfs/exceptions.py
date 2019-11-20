@@ -5,8 +5,8 @@ __all__ = [
     'FileExists',
     'UnsupportedFileType',
     'NoThumbnailRequired',
-    'QuotaExceeded',
-    'ReadError']
+    'QuotaExceeded'
+]
 
 
 class FileExists(Exception):
@@ -30,7 +30,3 @@ class NoThumbnailRequired(Exception):
 
 class QuotaExceeded(Exception):
     """Indicates that the customer's disk space quota has been exceeded."""
-
-
-class ReadError(Exception):
-    """Indicates an error reading the file data."""

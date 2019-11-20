@@ -8,11 +8,7 @@ from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
 from filedb import FileError
 from filedb import add
 from filedb import delete
-from filedb import get
-from filedb import mimetype
-from filedb import sha256sum
-from filedb import size
-from filedb import stream
+from filedb import File as FileDBFile
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
@@ -21,7 +17,6 @@ from hisfs.exceptions import FileExists
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.exceptions import NoThumbnailRequired
 from hisfs.exceptions import QuotaExceeded
-from hisfs.exceptions import ReadError
 from hisfs.thumbnails import gen_thumbnail
 
 
@@ -45,53 +40,43 @@ class FileMixin:
     """Common file mixin."""
 
     @property
+    def file(self):
+        """Returns the respective filedb model."""
+        return FileDBFile[self.file_id]
+
+    @property
     def bytes(self):
         """Returns the respective bytes."""
-        try:
-            return get(self._file)
-        except FileError:
-            raise ReadError()
+        return self.file.bytes  # Direct file access.
 
     @bytes.setter
     def bytes(self, bytes_):
         """Sets the respective bytes."""
         try:
-            delete(self._file)
+            delete(self.file_id)
         except FileError as file_error:
             LOGGER.error(file_error)
 
-        self._file = add(bytes_)['id']
+        self.file_id = add(bytes_)['id']
 
     @property
     def sha256sum(self):
         """Returns the expected SHA-256 checksum."""
-        try:
-            return sha256sum(self._file)
-        except FileError:
-            raise ReadError()
+        return self.file.sha256sum  # Direct file access.
 
     @property
     def mimetype(self):
         """Returns the MIME type."""
-        try:
-            return mimetype(self._file)
-        except FileError:
-            raise ReadError()
+        return self.file.mimetype   # Direct file access.
 
     @property
     def size(self):
         """Returns the size in bytes."""
-        try:
-            return size(self._file)
-        except FileError:
-            raise ReadError()
+        return self.file.size   # Direct file access.
 
     def stream(self, chunk_size=4096):
         """Yields byte chunks."""
-        try:
-            return stream(self._file, chunk_size=chunk_size)
-        except FileError:
-            raise ReadError()
+        return self.file.stream(chunk_size=chunk_size)  # Direct file access.
 
 
 class BasicFile(FSModel, FileMixin):
@@ -100,7 +85,7 @@ class BasicFile(FSModel, FileMixin):
     def delete_instance(self, recursive=False, delete_nullable=False):
         """Removes the file."""
         try:
-            delete(self._file)
+            delete(self.file_id)
         except FileError as file_error:
             LOGGER.error(file_error)
 
@@ -122,7 +107,7 @@ class File(BasicFile):  # pylint: disable=R0901
 
     name = CharField(255, column_name='name')
     customer = ForeignKeyField(Customer, column_name='customer')
-    _file = IntegerField(column_name='file')
+    file_id = IntegerField(column_name='file')
 
     @classmethod
     def add(cls, name, customer, bytes_, rename=False, *, suffix=0):
@@ -146,11 +131,6 @@ class File(BasicFile):  # pylint: disable=R0901
                 name, customer, bytes_, rename=rename, suffix=suffix+1)
 
         raise FileExists(file)
-
-    @property
-    def file(self):
-        """Returns the filedb ID."""
-        return self._file
 
     @property
     def is_image(self):
@@ -179,7 +159,7 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
     file = ForeignKeyField(File, column_name='file', backref='thumbnails')
     size_x = IntegerField()
     size_y = IntegerField()
-    _file = IntegerField(column_name='filedb_file')
+    file_id = IntegerField(column_name='filedb_file')
 
     @classmethod
     def from_file(cls, file, resolution):
