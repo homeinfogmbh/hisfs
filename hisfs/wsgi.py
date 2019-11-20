@@ -1,5 +1,5 @@
-"""File management modul
-e."""
+"""File management module."""
+
 from logging import INFO, basicConfig
 from pathlib import Path
 
