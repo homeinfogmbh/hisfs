@@ -5,6 +5,7 @@ from pathlib import Path
 
 from flask import request
 
+from filedb import FileStream
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
@@ -22,7 +23,6 @@ from hisfs.messages import NOT_A_PDF_DOCUMENT
 from hisfs.messages import QUOTA_EXCEEDED
 from hisfs.messages import READ_ERROR
 from hisfs.orm import File, Quota
-from hisfs.streaming import FileStream
 from hisfs.util import is_pdf, pdfimages
 
 
