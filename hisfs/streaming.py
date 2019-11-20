@@ -41,6 +41,7 @@ class FileStream(Response):     # pylint: disable=R0901
         super().__init__(
             file.stream(chunk_size), mimetype=file.mimetype,
             content_type=file.mimetype, direct_passthrough=True)
+        self.headers.add('Content-Length', file.size)
 
     @classmethod
     def from_request_args(cls, file):
