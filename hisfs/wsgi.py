@@ -5,7 +5,7 @@ from pathlib import Path
 
 from flask import request
 
-from filedb import FileStream
+from filedb import stream
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
@@ -108,7 +108,7 @@ def get(file):
     file = try_thumbnail(file)
 
     if 'stream' in request.args:
-        return FileStream.from_request_args(file)
+        return stream(file)
 
     if 'metadata' in request.args:
         return JSON(file.to_json())
