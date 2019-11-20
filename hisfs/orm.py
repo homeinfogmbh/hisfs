@@ -74,9 +74,9 @@ class FileMixin:
         """Returns the size in bytes."""
         return self.file.size   # Direct file access.
 
-    def stream(self, chunk_size=4096):
+    def get_chunk(self, start=None, end=None):
         """Yields byte chunks."""
-        return self.file.stream(chunk_size=chunk_size)  # Direct file access.
+        return self.file.get_chunk(start=start, end=end)  # Direct file access.
 
 
 class BasicFile(FSModel, FileMixin):
