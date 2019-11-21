@@ -2,27 +2,20 @@
 
 from tempfile import TemporaryFile
 
-from mimeutil import mimetype
 from wand.image import Image    # pylint: disable=E0401
-from wand.exceptions import CorruptImageError
+from wand.exceptions import CorruptImageError   # pylint: disable=E0611
 
 from hisfs.config import LOGGER
-from hisfs.messages import CURRUPT_PDF
+from hisfs.messages import CORRUPT_PDF
 
 
-__all__ = ['is_pdf', 'pdfimages']
+__all__ = ['pdfimages']
 
 
-def is_pdf(blob):
-    """Determines whether a file is a PDF document."""
-
-    return mimetype(blob) == 'application/pdf'
-
-
-def _pdfimages(blob, format, resolution=300):    # pylint: disable=W0622
+def _pdfimages(filename, format, resolution=300):    # pylint: disable=W0622
     """Yields pages as images from a PDF file."""
 
-    with Image(blob=blob, resolution=resolution) as pdf:
+    with Image(filename=filename, resolution=resolution) as pdf:
         for num, page in enumerate(pdf.sequence, start=1):
             LOGGER.info('Converting page #%i.', num)
 
@@ -36,10 +29,10 @@ def _pdfimages(blob, format, resolution=300):    # pylint: disable=W0622
                     yield tmp.read()
 
 
-def pdfimages(blob, format, resolution=300):    # pylint: disable=W0622
+def pdfimages(file, format, resolution=300):    # pylint: disable=W0622
     """Safely yields PDF images."""
 
     try:
-        yield from _pdfimages(blob, format, resolution=resolution)
+        yield from _pdfimages(file.path, format, resolution=resolution)
     except CorruptImageError:
-        raise CURRUPT_PDF
+        raise CORRUPT_PDF

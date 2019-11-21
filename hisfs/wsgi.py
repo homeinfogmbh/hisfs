@@ -23,7 +23,7 @@ from hisfs.messages import NOT_A_PDF_DOCUMENT
 from hisfs.messages import QUOTA_EXCEEDED
 from hisfs.messages import READ_ERROR
 from hisfs.orm import File, Quota
-from hisfs.util import is_pdf, pdfimages
+from hisfs.util import pdfimages
 
 
 __all__ = ['APPLICATION']
@@ -193,9 +193,7 @@ def delete(file):
 def convert_pdf(file):
     """Converts a PDF document into image files."""
 
-    bytes_ = file.bytes
-
-    if not is_pdf(bytes_):
+    if file.mimetype != 'application/pdf':
         raise NOT_A_PDF_DOCUMENT
 
     frmt = request.args.get('format', DEFAULT_FORMAT).upper()
@@ -203,7 +201,7 @@ def convert_pdf(file):
     stem = Path(file.name).stem
     pages = []
 
-    for index, bytes_ in enumerate(pdfimages(bytes_, frmt), start=1):
+    for index, bytes_ in enumerate(pdfimages(file, frmt), start=1):
         qalloc(len(bytes_))
         name = stem + f'-page{index}' + suffix
 
