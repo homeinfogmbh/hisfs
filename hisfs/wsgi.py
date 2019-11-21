@@ -3,7 +3,7 @@
 from logging import INFO, basicConfig
 from pathlib import Path
 
-from flask import request, Response
+from flask import request
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
@@ -22,6 +22,7 @@ from hisfs.messages import NOT_A_PDF_DOCUMENT
 from hisfs.messages import QUOTA_EXCEEDED
 from hisfs.messages import READ_ERROR
 from hisfs.orm import File, Quota
+from hisfs.streaming import stream
 from hisfs.util import is_pdf, pdfimages
 
 
@@ -98,16 +99,6 @@ def list_():
         File.customer == CUSTOMER.id)])
 
 
-def _stream(file):
-    """Creates a file stream."""
-
-    response = Response(
-        file.stream, mimetype=file.mimetype, content_type=file.mimetype,
-        direct_passthrough=True)
-    response.headers.add('content-length', file.size)
-    return response
-
-
 @authenticated
 @authorized('hisfs')
 @with_file
@@ -117,7 +108,7 @@ def get(file):
     file = try_thumbnail(file)
 
     if 'stream' in request.args:
-        return _stream(file)
+        return stream(file)
 
     if 'metadata' in request.args:
         return JSON(file.to_json())
