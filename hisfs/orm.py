@@ -50,11 +50,6 @@ class FileMixin:
         """Returns the respective bytes."""
         return get(self.file_id)
 
-    @property
-    def stream(self):
-        """Returns the respective bytes."""
-        return get(self.file_id, stream=True)
-
     @bytes.setter
     def bytes(self, bytes_):
         """Sets the respective bytes."""
