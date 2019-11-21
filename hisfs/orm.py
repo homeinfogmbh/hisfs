@@ -40,6 +40,10 @@ class FSModel(JSONModel):
 class FileMixin:
     """Common file mixin."""
 
+    def __getattr__(self, attribute):
+        """Delegates to filedb.File model."""
+        return getattr(self.file, attribute)
+
     @property
     def file(self):
         """Returns the respective filedb model."""
@@ -59,21 +63,6 @@ class FileMixin:
             LOGGER.error(file_error)
 
         self.file_id = add(bytes_)['id']
-
-    @property
-    def sha256sum(self):
-        """Returns the expected SHA-256 checksum."""
-        return self.file.sha256sum  # Direct file access.
-
-    @property
-    def mimetype(self):
-        """Returns the MIME type."""
-        return self.file.mimetype   # Direct file access.
-
-    @property
-    def size(self):
-        """Returns the size in bytes."""
-        return self.file.size   # Direct file access.
 
 
 class BasicFile(FSModel, FileMixin):
