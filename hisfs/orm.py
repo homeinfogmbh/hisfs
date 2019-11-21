@@ -8,6 +8,7 @@ from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
 from filedb import FileError
 from filedb import add
 from filedb import delete
+from filedb import get
 from filedb import File as FileDBFile
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
@@ -47,7 +48,12 @@ class FileMixin:
     @property
     def bytes(self):
         """Returns the respective bytes."""
-        return self.file.bytes  # Direct file access.
+        return get(self.file_id)
+
+    @property
+    def stream(self):
+        """Returns the respective bytes."""
+        return get(self.file_id, stream=True)
 
     @bytes.setter
     def bytes(self, bytes_):
@@ -73,10 +79,6 @@ class FileMixin:
     def size(self):
         """Returns the size in bytes."""
         return self.file.size   # Direct file access.
-
-    def get_chunk(self, start=None, end=None):
-        """Yields byte chunks."""
-        return self.file.get_chunk(start=start, end=end)  # Direct file access.
 
 
 class BasicFile(FSModel, FileMixin):
