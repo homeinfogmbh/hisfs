@@ -1,8 +1,8 @@
 """File streaming."""
 
-from filedb import get
-
 from flask import Response
+
+from filedb import get
 
 
 __all__ = ['stream']
