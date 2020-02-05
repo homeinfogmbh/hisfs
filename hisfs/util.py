@@ -9,13 +9,17 @@ from hisfs.config import LOGGER
 from hisfs.messages import CORRUPT_PDF
 
 
-__all__ = ['pdfimages']
+__all__ = ['DEFAULT_DPI', 'pdfimages']
 
 
-def _pdfimages(filename, format, resolution=300):    # pylint: disable=W0622
+DEFAULT_DPI = 300
+
+
+# pylint: disable=W0622
+def _pdfimages(filename, format, dpi=DEFAULT_DPI):
     """Yields pages as images from a PDF file."""
 
-    with Image(filename=filename, resolution=resolution) as pdf:
+    with Image(filename=filename, resolution=dpi) as pdf:
         for num, page in enumerate(pdf.sequence, start=1):
             LOGGER.info('Converting page #%i.', num)
 
@@ -29,10 +33,11 @@ def _pdfimages(filename, format, resolution=300):    # pylint: disable=W0622
                     yield tmp.read()
 
 
-def pdfimages(file, format, resolution=300):    # pylint: disable=W0622
+# pylint: disable=W0622
+def pdfimages(file, format, dpi=DEFAULT_DPI):
     """Safely yields PDF images."""
 
     try:
-        yield from _pdfimages(file.path, format, resolution=resolution)
+        yield from _pdfimages(file.path, format, dpi=dpi)
     except CorruptImageError:
         raise CORRUPT_PDF
