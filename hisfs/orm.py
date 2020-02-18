@@ -132,12 +132,6 @@ class File(BasicFile):  # pylint: disable=R0901
 
         raise UnsupportedFileType()
 
-    def to_json(self, *args, **kwargs):
-        """Returns a JSON-ish dictionary."""
-        json = super().to_json(*args, **kwargs)
-        json['filename'] = self.name
-        return json
-
     def delete_instance(self, recursive=False, delete_nullable=False):
         """Removes the file."""
         for thumbnail in self.thumbnails:
