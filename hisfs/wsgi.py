@@ -1,13 +1,11 @@
 """File management module."""
 
 from logging import INFO, basicConfig
-from pathlib import Path
 
 from flask import request
 
 from filedb import stream
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
-from his.messages.data import NOT_AN_INTEGER
 from wsgilib import JSON, Binary
 
 from hisfs.config import DEFAULT_QUOTA, LOG_FORMAT
@@ -20,11 +18,9 @@ from hisfs.messages import FILE_DELETED
 from hisfs.messages import FILE_EXISTS
 from hisfs.messages import FILES_CREATED
 from hisfs.messages import NO_SUCH_FILE
-from hisfs.messages import NOT_A_PDF_DOCUMENT
 from hisfs.messages import QUOTA_EXCEEDED
 from hisfs.messages import READ_ERROR
 from hisfs.orm import File, Quota
-from hisfs.util import DEFAULT_DPI, pdfimages
 
 
 __all__ = ['APPLICATION']
@@ -41,20 +37,6 @@ def _get_quota():
         return Quota.get(Quota.customer == CUSTOMER.id)
     except Quota.DoesNotExist:
         return Quota(customer=CUSTOMER.id, quota=DEFAULT_QUOTA)
-
-
-def _get_dpi():
-    """Returns the desired DPI."""
-
-    try:
-        dpi = request.args['dpi']
-    except KeyError:
-        return DEFAULT_DPI
-
-    try:
-        return int(dpi)
-    except ValueError:
-        raise NOT_AN_INTEGER.update(parameter='dpi')
 
 
 def qalloc(bytec):
@@ -202,37 +184,6 @@ def delete(file):
     return FILE_DELETED
 
 
-@authenticated
-@authorized('hisfs')
-@with_file
-def convert_pdf(file):
-    """Converts a PDF document into image files."""
-
-    if file.mimetype != 'application/pdf':
-        raise NOT_A_PDF_DOCUMENT
-
-    frmt = request.args.get('format', DEFAULT_FORMAT).upper()
-    dpi = _get_dpi()
-    suffix = '.{}'.format(frmt.lower())
-    stem = Path(file.name).stem
-    pages = []
-
-    for index, bytes_ in enumerate(pdfimages(file, frmt, dpi=dpi), start=1):
-        qalloc(len(bytes_))
-        name = stem + f'-page{index}' + suffix
-
-        try:
-            file = File.add(name, CUSTOMER.id, bytes_)
-        except FileExists as file_exists:
-            file = file_exists.file
-        else:
-            file.save()
-
-        pages.append(file.id)
-
-    return FILES_CREATED.update(pages=pages)
-
-
 @APPLICATION.before_first_request
 def init():
     """Initializes the app."""
@@ -253,7 +204,6 @@ ROUTES = (
     ('GET', '/<int:ident>', get),
     ('POST', '/', post_multi),
     ('POST', '/<name>', post),
-    ('PATCH', '/<int:ident>', convert_pdf),
     ('DELETE', '/<int:ident>', delete)
 )
 APPLICATION.add_routes(ROUTES)
