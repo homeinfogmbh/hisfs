@@ -5,15 +5,11 @@ from pathlib import Path
 
 from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
 
-from filedb import FileError
-from filedb import add
-from filedb import delete
-from filedb import get
 from filedb import File as FileDBFile
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
-from hisfs.config import CONFIG, LOGGER
+from hisfs.config import CONFIG
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.exceptions import NoThumbnailRequired
@@ -37,46 +33,14 @@ class FSModel(JSONModel):
         schema = DATABASE.database
 
 
-class FileMixin:
-    """Common file mixin."""
-
-    def __getattr__(self, attribute):
-        """Delegates to filedb.File model."""
-        return getattr(self.file, attribute)
-
-    @property
-    def file(self):
-        """Returns the respective filedb model."""
-        return FileDBFile[self.file_id]
-
-    @property
-    def bytes(self):
-        """Returns the respective bytes."""
-        return get(self.file_id)
-
-    @bytes.setter
-    def bytes(self, bytes_):
-        """Sets the respective bytes."""
-        try:
-            delete(self.file_id)
-        except FileError as file_error:
-            LOGGER.error(file_error)
-
-        self.file_id = add(bytes_)['id']
-
-
-class BasicFile(FSModel, FileMixin):
+class BasicFile(FSModel):
     """Common files model."""
 
-    def delete_instance(self, recursive=False, delete_nullable=False):
-        """Removes the file."""
-        try:
-            delete(self.file_id)
-        except FileError as file_error:
-            LOGGER.error(file_error)
+    filedb_file = ForeignKeyField(FileDBFile, column_name='filedb_file')
 
-        return super().delete_instance(
-            recursive=recursive, delete_nullable=delete_nullable)
+    def __getattr__(self, attr):
+        """Delegates to the FileDB file."""
+        return getattr(self.filedb_file, attr)
 
     def to_json(self, *args, **kwargs):
         """Returns a JSON-ish dictionary."""
@@ -95,10 +59,9 @@ class File(BasicFile):  # pylint: disable=R0901
 
     name = CharField(255, column_name='name')
     customer = ForeignKeyField(Customer, column_name='customer')
-    file_id = IntegerField(column_name='file')
 
     @classmethod
-    def add(cls, name, customer, bytes_, rename=False, *, suffix=0):
+    def add(cls, name, customer, bytes_, *, rename=False, suffix=0):
         """Adds the respective file."""
         if rename and suffix:
             path = Path(name)
@@ -110,7 +73,9 @@ class File(BasicFile):  # pylint: disable=R0901
             file = cls()
             file.name = name
             file.customer = customer
-            file.bytes = bytes_
+            filedb_file = FileDBFile.from_bytes(bytes_)
+            filedb_file.save()
+            file.filedb_file = filedb_file
             file.save()
             return file
 
@@ -123,7 +88,7 @@ class File(BasicFile):  # pylint: disable=R0901
     @property
     def is_image(self):
         """Determines whether this file is an image."""
-        return self.mimetype in IMAGE_MIMETYPES
+        return self.file.mimetype in IMAGE_MIMETYPES
 
     def thumbnail(self, resolution):
         """Returns a thumbnail with the respective resolution."""
@@ -132,22 +97,14 @@ class File(BasicFile):  # pylint: disable=R0901
 
         raise UnsupportedFileType()
 
-    def delete_instance(self, recursive=False, delete_nullable=False):
-        """Removes the file."""
-        for thumbnail in self.thumbnails:
-            thumbnail.delete_instance()
-
-        return super().delete_instance(
-            recursive=recursive, delete_nullable=delete_nullable)
-
 
 class Thumbnail(BasicFile):     # pylint: disable=R0901
     """An image thumbnail."""
 
-    file = ForeignKeyField(File, column_name='file', backref='thumbnails')
+    file = ForeignKeyField(
+        File, column_name='file', backref='thumbnails', on_delete='CASCADE')
     size_x = IntegerField()
     size_y = IntegerField()
-    file_id = IntegerField(column_name='filedb_file')
 
     @classmethod
     def from_file(cls, file, resolution):
@@ -168,7 +125,9 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
         thumbnail = cls()
         thumbnail.file = file
         thumbnail.size_x, thumbnail.size_y = resolution
-        thumbnail.bytes = bytes_
+        filedb_file = FileDBFile.from_bytes(bytes_)
+        filedb_file.save()
+        thumbnail.filedb_file = filedb_file
         thumbnail.save()
         return thumbnail
 

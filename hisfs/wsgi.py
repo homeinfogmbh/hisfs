@@ -4,7 +4,6 @@ from logging import INFO, basicConfig
 
 from flask import request
 
-from filedb import stream
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
 
@@ -105,7 +104,7 @@ def get(file):
     file = try_thumbnail(file)
 
     if 'stream' in request.args:
-        return stream(file)
+        return file.stream()
 
     if 'metadata' in request.args:
         return JSON(file.to_json())
