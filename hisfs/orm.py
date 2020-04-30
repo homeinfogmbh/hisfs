@@ -1,11 +1,12 @@
 """ORM models."""
 
 from contextlib import suppress
+from functools import lru_cache
 from pathlib import Path
 
 from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
 
-from filedb import File as FileDBFile
+from filedb import META_FIELDS, File as FileDBFile
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
@@ -25,6 +26,13 @@ PATHSEP = '/'
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
 
+@lru_cache(64)
+def _get_sparse_file(ident):
+    """Returns a sparse filedb.File without binary data."""
+
+    return FileDBFile.select(*META_FIELDS).where(FileDBFile.id == ident).get()
+
+
 class FSModel(JSONModel):
     """Basic immobit model."""
 
@@ -38,17 +46,23 @@ class BasicFile(FSModel):
 
     filedb_file = ForeignKeyField(FileDBFile, column_name='filedb_file')
 
-    def __getattr__(self, attr):
-        """Delegates to the FileDB file."""
-        return getattr(self.filedb_file, attr)
+    @property
+    def bytes(self):
+        """Returns the bytes."""
+        return self.filedb_file.bytes
+
+    @property
+    def metadata(self):
+        """Returns the file meta data."""
+        return _get_sparse_file(self.filedb_file_id)
 
     def to_json(self, *args, **kwargs):
         """Returns a JSON-ish dictionary."""
         json = super().to_json(*args, **kwargs)
         metadata = {
-            'sha256sum': self.sha256sum,
-            'mimetype': self.mimetype,
-            'size': self.size
+            'sha256sum': self.metadata.sha256sum,
+            'mimetype': self.metadata.mimetype,
+            'size': self.metadata.size
         }
         json.update(metadata)
         return json
@@ -73,9 +87,7 @@ class File(BasicFile):  # pylint: disable=R0901
             file = cls()
             file.name = name
             file.customer = customer
-            filedb_file = FileDBFile.from_bytes(bytes_)
-            filedb_file.save()
-            file.filedb_file = filedb_file
+            file.filedb_file = FileDBFile.from_bytes(bytes_, save=True)
             file.save()
             return file
 
@@ -125,9 +137,7 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
         thumbnail = cls()
         thumbnail.file = file
         thumbnail.size_x, thumbnail.size_y = resolution
-        filedb_file = FileDBFile.from_bytes(bytes_)
-        filedb_file.save()
-        thumbnail.filedb_file = filedb_file
+        thumbnail.filedb_file = FileDBFile.from_bytes(bytes_, save=True)
         thumbnail.save()
         return thumbnail
 
@@ -145,13 +155,13 @@ class Quota(FSModel):
 
     @property
     def files(self):
-        """Yields media file records of the respective customer."""
+        """Yields file records of the respective customer."""
         return File.select().where(File.customer == self.customer)
 
     @property
     def used(self):
         """Returns used space."""
-        return sum(file.size for file in self.files)
+        return sum(file.metadata.size for file in self.files.iterator())
 
     @property
     def free(self):
@@ -171,5 +181,6 @@ class Quota(FSModel):
         json.update({
             'quota': self.quota,
             'free': self.free,
-            'used': self.used})
+            'used': self.used
+        })
         return json
