@@ -11,7 +11,6 @@ from hisfs.config import DEFAULT_QUOTA, LOG_FORMAT
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import QuotaExceeded
 from hisfs.exceptions import UnsupportedFileType
-from hisfs.hooks import run_delete_hooks
 from hisfs.messages import FILE_CREATED
 from hisfs.messages import FILE_DELETED
 from hisfs.messages import FILE_EXISTS
@@ -178,7 +177,6 @@ def post_multi():
 def delete(file):
     """Deletes the respective file."""
 
-    run_delete_hooks(file.id)
     file.delete_instance()
     return FILE_DELETED
 
