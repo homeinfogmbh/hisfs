@@ -130,7 +130,7 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
 
         try:
             bytes_, resolution = gen_thumbnail(
-                file.bytes, resolution, file.mimetype)
+                file.bytes, resolution, file.metadata.mimetype)
         except NoThumbnailRequired:
             return file
 
