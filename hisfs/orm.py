@@ -170,8 +170,10 @@ class Quota(FSModel):
 
     def alloc(self, bytec):
         """Tries to allocate the requested size in bytes."""
-        if self.free < bytec:
-            raise QuotaExceeded(quota=self.quota, free=self.free, bytec=bytec)
+        free = self.free
+
+        if free < bytec:
+            raise QuotaExceeded(quota=self.quota, free=free, bytec=bytec)
 
         return True
 
