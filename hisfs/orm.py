@@ -100,7 +100,7 @@ class File(BasicFile):  # pylint: disable=R0901
     @property
     def is_image(self):
         """Determines whether this file is an image."""
-        return self.file.mimetype in IMAGE_MIMETYPES
+        return self.filedb_file.mimetype in IMAGE_MIMETYPES
 
     def thumbnail(self, resolution):
         """Returns a thumbnail with the respective resolution."""
