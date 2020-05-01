@@ -51,6 +51,15 @@ class BasicFile(FSModel):
         """Returns the file meta data."""
         return _get_sparse_file(self.filedb_file_id)
 
+    @property
+    def bytes(self):
+        """Returns the file's bytes."""
+        return self.filedb_file.bytes
+
+    def stream(self):
+        """Returns HTTP stream."""
+        return self.filedb_file.stream()
+
     def to_json(self, *args, **kwargs):
         """Returns a JSON-ish dictionary."""
         json = super().to_json(*args, **kwargs)
@@ -95,7 +104,7 @@ class File(BasicFile):  # pylint: disable=R0901
     @property
     def is_image(self):
         """Determines whether this file is an image."""
-        return self.filedb_file.mimetype in IMAGE_MIMETYPES
+        return self.metadata.mimetype in IMAGE_MIMETYPES
 
     def thumbnail(self, resolution):
         """Returns a thumbnail with the respective resolution."""
@@ -123,9 +132,11 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
                 (cls.file == file)
                 & ((cls.size_x == size_x) | (cls.size_y == size_y)))
 
+        filedb_file = file.filedb_file
+
         try:
             bytes_, resolution = gen_thumbnail(
-                file.filedb_file.bytes, resolution, file.filedb_file.mimetype)
+                filedb_file.bytes, resolution, filedb_file.mimetype)
         except NoThumbnailRequired:
             return file
 

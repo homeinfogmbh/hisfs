@@ -103,15 +103,15 @@ def get(file):
     file = try_thumbnail(file)
 
     if 'stream' in request.args:
-        return file.filedb_file.stream()
+        return file.stream()
 
     if 'metadata' in request.args:
         return JSON(file.to_json())
 
     if 'named' in request.args:
-        return Binary(file.filedb_file.bytes, filename=file.name)
+        return Binary(file.bytes, filename=file.name)
 
-    return Binary(file.filedb_file.bytes)
+    return Binary(file.bytes)
 
 
 @authenticated
