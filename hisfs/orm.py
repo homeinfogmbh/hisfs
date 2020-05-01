@@ -47,11 +47,6 @@ class BasicFile(FSModel):
     filedb_file = ForeignKeyField(FileDBFile, column_name='filedb_file')
 
     @property
-    def bytes(self):
-        """Returns the bytes."""
-        return self.filedb_file.bytes
-
-    @property
     def metadata(self):
         """Returns the file meta data."""
         return _get_sparse_file(self.filedb_file_id)
@@ -130,7 +125,7 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
 
         try:
             bytes_, resolution = gen_thumbnail(
-                file.bytes, resolution, file.metadata.mimetype)
+                file.filedb_file.bytes, resolution, file.filedb_file.mimetype)
         except NoThumbnailRequired:
             return file
 
