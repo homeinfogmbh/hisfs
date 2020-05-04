@@ -1,7 +1,7 @@
 """HIS module providing a file system."""
 
-from hisfs.functions import check_file_access
+from hisfs.functions import get_file
 from hisfs.orm import File
 
 
-__all__ = ['check_file_access', 'File']
+__all__ = ['get_file', 'File']

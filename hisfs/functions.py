@@ -5,11 +5,11 @@ from his import ACCOUNT, CUSTOMER
 from hisfs.orm import File
 
 
-__all__ = ['check_file_access']
+__all__ = ['get_file']
 
 
-def check_file_access(file_id):
-    """Checks the persmissions of the file access."""
+def get_file(file_id):
+    """Returns a file by its ID with permission checks."""
 
     condition = File.id == file_id
 
