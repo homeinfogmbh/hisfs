@@ -71,6 +71,13 @@ class BasicFile(FSModel):
         json.update(metadata)
         return json
 
+    def save(self, *args, **kwargs):
+        """Saves the filedb.File first."""
+        if self.filedb_file:
+            self.filedb_file.save(*args, **kwargs)
+
+        return super().save(*args, **kwargs)
+
 
 class File(BasicFile):  # pylint: disable=R0901
     """Inode database model for the virtual filesystem."""
