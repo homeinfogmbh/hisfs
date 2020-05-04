@@ -91,8 +91,7 @@ class File(BasicFile):  # pylint: disable=R0901
             file = cls()
             file.name = name
             file.customer = customer
-            file.filedb_file = FileDBFile.from_bytes(bytes_, save=True)
-            file.save()
+            file.filedb_file = FileDBFile.from_bytes(bytes_)
             return file
 
         if rename:

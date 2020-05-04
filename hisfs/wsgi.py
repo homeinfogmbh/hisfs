@@ -128,6 +128,7 @@ def post(name):
     except FileExists as file_exists:
         raise FILE_EXISTS.update(id=file_exists.file.id)
 
+    file.filedb_file.save()
     file.save()
     return FILE_CREATED.update(id=file.id)
 
