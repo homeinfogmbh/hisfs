@@ -122,14 +122,18 @@ def post(name):
     data = request.get_data()
     rename = 'rename' in request.args
     qalloc(len(data))
+    print('DEBUG1', flush=True)
 
     try:
         file = File.add(name, CUSTOMER.id, data, rename=rename)
     except FileExists as file_exists:
         raise FILE_EXISTS.update(id=file_exists.file.id)
 
+    print('DEBUG2', flush=True)
     file.filedb_file.save()
+    print('DEBUG3', flush=True)
     file.save()
+    print('DEBUG4', flush=True)
     return FILE_CREATED.update(id=file.id)
 
 
