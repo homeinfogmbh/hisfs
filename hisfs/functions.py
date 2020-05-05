@@ -2,13 +2,14 @@
 
 from his import ACCOUNT, CUSTOMER
 
+from hisfs.messages import NO_SUCH_FILE
 from hisfs.orm import File
 
 
 __all__ = ['get_file']
 
 
-def get_file(file_id):
+def get_file(file_id, *, exception=NO_SUCH_FILE):
     """Returns a file by its ID with permission checks."""
 
     condition = File.id == file_id
@@ -16,4 +17,10 @@ def get_file(file_id):
     if not ACCOUNT.root:
         condition &= File.customer == CUSTOMER.id
 
-    return File.get(condition)
+    try:
+        return File.get(condition)
+    except File.DoesNotExist:
+        if exception is None:
+            raise
+
+        raise exception
