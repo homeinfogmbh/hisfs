@@ -124,7 +124,8 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
     """An image thumbnail."""
 
     file = ForeignKeyField(
-        File, column_name='file', backref='thumbnails', on_delete='CASCADE')
+        File, column_name='file', backref='thumbnails', on_delete='CASCADE',
+        on_update='CASCADE')
     size_x = IntegerField()
     size_y = IntegerField()
 
