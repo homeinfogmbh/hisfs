@@ -3,6 +3,7 @@
 from logging import INFO, basicConfig
 
 from flask import request
+from peewee import IntegrityError
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import JSON, Binary
@@ -14,6 +15,7 @@ from hisfs.exceptions import UnsupportedFileType
 from hisfs.messages import FILE_CREATED
 from hisfs.messages import FILE_DELETED
 from hisfs.messages import FILE_EXISTS
+from hisfs.messages import FILE_IN_USE
 from hisfs.messages import FILES_CREATED
 from hisfs.messages import NO_SUCH_FILE
 from hisfs.messages import QUOTA_EXCEEDED
@@ -177,7 +179,11 @@ def post_multi():
 def delete(file):
     """Deletes the respective file."""
 
-    file.delete_instance()
+    try:
+        file.delete_instance()
+    except IntegrityError:
+        return FILE_IN_USE
+
     return FILE_DELETED
 
 
