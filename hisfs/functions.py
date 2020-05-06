@@ -6,7 +6,7 @@ from hisfs.messages import NO_SUCH_FILE
 from hisfs.orm import File
 
 
-__all__ = ['get_file']
+__all__ = ['get_file', 'file_usage']
 
 
 def get_file(file_id, *, exception=NO_SUCH_FILE):
@@ -27,3 +27,10 @@ def get_file(file_id, *, exception=NO_SUCH_FILE):
             raise
 
         raise exception
+
+
+def file_usage(consistency_error):
+    """Returns the file usage from a peewee.ConsistencyError."""
+
+    # TODO: implement.
+    pass
