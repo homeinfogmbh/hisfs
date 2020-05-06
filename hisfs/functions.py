@@ -12,6 +12,9 @@ __all__ = ['get_file']
 def get_file(file_id, *, exception=NO_SUCH_FILE):
     """Returns a file by its ID with permission checks."""
 
+    if file_id is None:
+        return None
+
     condition = File.id == file_id
 
     if not ACCOUNT.root:
