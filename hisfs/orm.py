@@ -181,12 +181,12 @@ class Quota(FSModel):
         """Returns free space for the respective customer."""
         return self.quota - self.used
 
-    def alloc(self, bytec):
+    def alloc(self, size):
         """Tries to allocate the requested size in bytes."""
         free = self.free
 
-        if free < bytec:
-            raise QuotaExceeded(quota=self.quota, free=free, bytec=bytec)
+        if size > free:
+            raise QuotaExceeded(quota=self.quota, free=free, size=size)
 
         return True
 
