@@ -18,7 +18,7 @@ from hisfs.exceptions import QuotaExceeded
 from hisfs.thumbnails import gen_thumbnail
 
 
-__all__ = ['File', 'Quota']
+__all__ = ['get_sparse_file', 'File', 'Quota']
 
 
 DATABASE = MySQLDatabase.from_config(CONFIG['db'])
@@ -27,7 +27,7 @@ IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
 
 @lru_cache(64)
-def _get_sparse_file(ident):
+def get_sparse_file(ident):
     """Returns a sparse filedb.File without binary data."""
 
     return FileDBFile.select(*META_FIELDS).where(FileDBFile.id == ident).get()
@@ -49,7 +49,7 @@ class BasicFile(FSModel):
     @property
     def metadata(self):
         """Returns the file meta data."""
-        return _get_sparse_file(self.filedb_file_id)
+        return get_sparse_file(self.filedb_file_id)
 
     @property
     def bytes(self):
@@ -63,11 +63,7 @@ class BasicFile(FSModel):
     def to_json(self, *args, **kwargs):
         """Returns a JSON-ish dictionary."""
         json = super().to_json(*args, **kwargs)
-        metadata = {
-            'sha256sum': self.metadata.sha256sum,
-            'mimetype': self.metadata.mimetype,
-            'size': self.metadata.size
-        }
+        metadata = self.metadata.to_json(*args, **kwargs)
         json.update(metadata)
         return json
 
@@ -183,19 +179,13 @@ class Quota(FSModel):
 
     def alloc(self, size):
         """Tries to allocate the requested size in bytes."""
-        free = self.free
-
-        if size > free:
-            raise QuotaExceeded(quota=self.quota, free=free, size=size)
+        if size > self.free:
+            raise QuotaExceeded(quota=self.quota, free=self.free, size=size)
 
         return True
 
     def to_json(self, **kwargs):
         """Returns a JSON-ish dictionary."""
         json = super().to_json(**kwargs)
-        json.update({
-            'quota': self.quota,
-            'free': self.free,
-            'used': self.used
-        })
+        json.update({'free': self.free, 'used': self.used})
         return json
