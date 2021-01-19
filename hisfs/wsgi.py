@@ -105,11 +105,13 @@ def get(file: File) -> Union[Binary, JSON, Response]:
 
     file = try_thumbnail(file)
 
-    if 'stream' in request.args:
-        return file.stream()
-
     if 'metadata' in request.args:
         return JSON(file.to_json())
+
+    file = file.with_payload()
+
+    if 'stream' in request.args:
+        return file.stream()
 
     if 'named' in request.args:
         return Binary(file.bytes, filename=file.name)
