@@ -31,7 +31,7 @@ class NoThumbnailRequired(Exception):
 class QuotaExceeded(Exception):
     """Indicates that the customer's disk space quota has been exceeded."""
 
-    def __init__(self, quota, free, size):
+    def __init__(self, quota: int, free: int, size: int):
         """Sets quota, free space and requested size."""
         super().__init__()
         self.quota = quota
