@@ -24,7 +24,7 @@ def get_file(file_id: Union[int, File], *,
         condition &= File.customer == CUSTOMER.id
 
     try:
-        return File.get(condition)
+        return File.select(payload=True).where(condition).get()
     except File.DoesNotExist:
         if exception is None:
             raise
