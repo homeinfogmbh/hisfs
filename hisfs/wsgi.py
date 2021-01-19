@@ -1,12 +1,13 @@
 """File management module."""
 
 from logging import INFO, basicConfig
+from typing import Callable, Union
 
-from flask import request
+from flask import Response, request
 from peewee import IntegrityError
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
-from wsgilib import JSON, Binary
+from wsgilib import Binary, JSON, JSONMessage
 
 from hisfs.config import DEFAULT_QUOTA, LOG_FORMAT
 from hisfs.exceptions import FileExists
@@ -20,7 +21,7 @@ from hisfs.messages import FILES_CREATED
 from hisfs.messages import NO_SUCH_FILE
 from hisfs.messages import QUOTA_EXCEEDED
 from hisfs.messages import READ_ERROR
-from hisfs.orm import File, Quota
+from hisfs.orm import File, Quota, Thumbnail
 
 
 __all__ = ['APPLICATION']
@@ -30,7 +31,7 @@ APPLICATION = Application('hisfs', debug=True)
 DEFAULT_FORMAT = 'png'
 
 
-def _get_quota():
+def _get_quota() -> Quota:
     """Returns the customer's quota."""
 
     try:
@@ -39,16 +40,16 @@ def _get_quota():
         return Quota(customer=CUSTOMER.id, quota=DEFAULT_QUOTA)
 
 
-def qalloc(bytec):
+def qalloc(bytec: int) -> bool:
     """Attempts to allocate the respective amount of bytes."""
 
     try:
         return _get_quota().alloc(bytec)
     except QuotaExceeded:
-        raise QUOTA_EXCEEDED
+        raise QUOTA_EXCEEDED from None
 
 
-def try_thumbnail(file):
+def try_thumbnail(file: File) -> Union[File, Thumbnail]:
     """Attempts to return a thumbnail if desired."""
 
     try:
@@ -65,7 +66,7 @@ def try_thumbnail(file):
         return file
 
 
-def with_file(function):
+def with_file(function: Callable) -> Callable:
     """Decorator to translate file ID to an actual file record."""
 
     def wrapper(ident, *args, **kwargs):
@@ -89,7 +90,7 @@ def with_file(function):
 
 @authenticated
 @authorized('hisfs')
-def list_():
+def list_() -> JSON:
     """Lists the customer's files."""
 
     return JSON([file.to_json() for file in File.select().where(
@@ -99,7 +100,7 @@ def list_():
 @authenticated
 @authorized('hisfs')
 @with_file
-def get(file):
+def get(file: File) -> Union[Binary, JSON, Response]:
     """Returns the respective file."""
 
     file = try_thumbnail(file)
@@ -118,7 +119,7 @@ def get(file):
 
 @authenticated
 @authorized('hisfs')
-def post(name):
+def post(name: str) -> JSONMessage:
     """Adds a new file."""
 
     data = request.get_data()
@@ -136,7 +137,7 @@ def post(name):
 
 @authenticated
 @authorized('hisfs')
-def post_multi():
+def post_multi() -> JSONMessage:
     """Adds multiple new files."""
 
     rename = 'rename' in request.args
@@ -176,7 +177,7 @@ def post_multi():
 @authenticated
 @authorized('hisfs')
 @with_file
-def delete(file):
+def delete(file: File) -> JSONMessage:
     """Deletes the respective file."""
 
     try:

@@ -1,15 +1,18 @@
 """External functions."""
 
+from typing import Union
+
 from his import ACCOUNT, CUSTOMER
 
 from hisfs.messages import NO_SUCH_FILE
 from hisfs.orm import File
 
 
-__all__ = ['get_file', 'file_usage']
+__all__ = ['get_file']
 
 
-def get_file(file_id, *, exception=NO_SUCH_FILE):
+def get_file(file_id: Union[int, File], *,
+             exception: Exception = NO_SUCH_FILE) -> File:
     """Returns a file by its ID with permission checks."""
 
     if file_id is None:
@@ -26,11 +29,4 @@ def get_file(file_id, *, exception=NO_SUCH_FILE):
         if exception is None:
             raise
 
-        raise exception
-
-
-def file_usage(consistency_error):
-    """Returns the file usage from a peewee.ConsistencyError."""
-
-    # TODO: implement.
-    pass
+        raise exception from None
