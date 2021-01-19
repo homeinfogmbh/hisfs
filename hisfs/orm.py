@@ -1,10 +1,17 @@
 """ORM models."""
 
+from __future__ import annotations
 from contextlib import suppress
-from functools import lru_cache
+from datetime import datetime
 from pathlib import Path
+from typing import Tuple, Union
 
-from peewee import ForeignKeyField, IntegerField, CharField, BigIntegerField
+from flask import Response
+from peewee import BigIntegerField
+from peewee import CharField
+from peewee import ForeignKeyField
+from peewee import IntegerField
+from peewee import ModelSelect
 
 from filedb import META_FIELDS, File as FileDBFile
 from mdb import Customer
@@ -18,19 +25,12 @@ from hisfs.exceptions import QuotaExceeded
 from hisfs.thumbnails import gen_thumbnail
 
 
-__all__ = ['get_sparse_file', 'File', 'Quota']
+__all__ = ['File', 'Thumbnail', 'Quota']
 
 
 DATABASE = MySQLDatabase.from_config(CONFIG['db'])
 PATHSEP = '/'
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
-
-
-@lru_cache(64)
-def get_sparse_file(ident):
-    """Returns a sparse filedb.File without binary data."""
-
-    return FileDBFile.select(*META_FIELDS).where(FileDBFile.id == ident).get()
 
 
 class FSModel(JSONModel):
@@ -46,28 +46,67 @@ class BasicFile(FSModel):
 
     filedb_file = ForeignKeyField(FileDBFile, column_name='filedb_file')
 
-    @property
-    def metadata(self):
-        """Returns the file meta data."""
-        return get_sparse_file(self.filedb_file_id)
+    @classmethod
+    def select(cls, *args, payload: bool = False, **kwargs):
+        """Makes a select with or without bytes."""
+        if args or kwargs:
+            return super().select(*args, **kwargs)
+
+        if payload:
+            return super().select(cls, FileDBFile).join(FileDBFile)
+
+        return super().select(cls, *META_FIELDS).join(FileDBFile)
 
     @property
-    def bytes(self):
-        """Returns the file's bytes."""
+    def bytes(self) -> bytes:
+        """Returns the bytes."""
         return self.filedb_file.bytes
 
-    def stream(self):
+    @property
+    def mimetype(self) -> str:
+        """Returns the MIME type."""
+        return self.filedb_file.mimetype
+
+    @property
+    def sha256sum(self) -> str:
+        """Returns the SHA-256 checksum."""
+        return self.filedb_file.sha256sum
+
+    @property
+    def size(self) -> int:
+        """Returns the file size."""
+        return self.filedb_Thumbnailfile.size
+
+    @property
+    def created(self) -> datetime:
+        """Returns the create datetime."""
+        return self.filedb_file.created
+
+    @property
+    def last_access(self) -> datetime:
+        """Returns the last access datetime."""
+        return self.filedb_file.last_access
+
+    @property
+    def accessed(self) -> int:
+        """Returns the access count."""
+        return self.filedb_file.accessed
+
+    def stream(self) -> Response:
         """Returns HTTP stream."""
         return self.filedb_file.stream()
 
-    def to_json(self, *args, **kwargs):
+    def to_json(self, *args, **kwargs) -> dict:
         """Returns a JSON-ish dictionary."""
         json = super().to_json(*args, **kwargs)
-        metadata = self.metadata.to_json(*args, **kwargs)
-        json.update(metadata)
+
+        if self.filedb_file:
+            filedb_json = self.filedb_file.to_json(*args, **kwargs)
+            json = {**filedb_json, **json}
+
         return json
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> int:
         """Saves the filedb.File first."""
         if self.filedb_file:
             self.filedb_file.save(*args, **kwargs)
@@ -82,11 +121,12 @@ class File(BasicFile):  # pylint: disable=R0901
     customer = ForeignKeyField(Customer, column_name='customer')
 
     @classmethod
-    def add(cls, name, customer, bytes_, *, rename=False, suffix=0):
+    def add(cls, name: str, customer: Union[Customer, int], bytes_: bytes, *,
+            rename: bool = False, suffix: int = 0) -> File:
         """Adds the respective file."""
         if rename and suffix:
             path = Path(name)
-            name = path.stem + f' ({suffix})' + path.suffix
+            name = f'{path.stem} ({suffix}){path.suffix}'
 
         try:
             file = cls.get((cls.name == name) & (cls.customer == customer))
@@ -104,11 +144,11 @@ class File(BasicFile):  # pylint: disable=R0901
         raise FileExists(file)
 
     @property
-    def is_image(self):
+    def is_image(self) -> bool:
         """Determines whether this file is an image."""
         return self.metadata.mimetype in IMAGE_MIMETYPES
 
-    def thumbnail(self, resolution):
+    def thumbnail(self, resolution: Tuple[int, int]) -> Thumbnail:
         """Returns a thumbnail with the respective resolution."""
         if self.is_image:
             return Thumbnail.from_file(self, resolution)
@@ -126,7 +166,7 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
     size_y = IntegerField()
 
     @classmethod
-    def from_file(cls, file, resolution):
+    def from_file(cls, file: File, resolution: Tuple[int, int]) -> Thumbnail:
         """Creates a thumbnail from the respective file."""
         size_x, size_y = resolution
 
@@ -158,33 +198,33 @@ class Quota(FSModel):
     quota = BigIntegerField()   # Quota in bytes.
 
     @classmethod
-    def by_customer(cls, customer):
+    def by_customer(cls, customer: Union[Customer, int]) -> Quota:
         """Returns the settings for the respective customer."""
         return cls.get(cls.customer == customer)
 
     @property
-    def files(self):
+    def files(self) -> ModelSelect:
         """Yields file records of the respective customer."""
         return File.select().where(File.customer == self.customer)
 
     @property
-    def used(self):
+    def used(self) -> int:
         """Returns used space."""
         return sum(file.metadata.size for file in self.files.iterator())
 
     @property
-    def free(self):
+    def free(self) -> int:
         """Returns free space for the respective customer."""
         return self.quota - self.used
 
-    def alloc(self, size):
+    def alloc(self, size: int) -> bool:
         """Tries to allocate the requested size in bytes."""
         if size > self.free:
             raise QuotaExceeded(quota=self.quota, free=self.free, size=size)
 
         return True
 
-    def to_json(self, **kwargs):
+    def to_json(self, **kwargs) -> dict:
         """Returns a JSON-ish dictionary."""
         json = super().to_json(**kwargs)
         json.update({'free': self.free, 'used': self.used})
