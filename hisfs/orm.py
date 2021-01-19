@@ -96,6 +96,14 @@ class BasicFile(FSModel):
         """Returns HTTP stream."""
         return self.filedb_file.stream()
 
+    def with_payload(self):
+        """Returns the file with payload."""
+        with suppress(AttributeError):
+            if self.file.bytes is not None:
+                return self
+
+        return type(self).select(payload=True).where(type(self).id == self.id)
+
     def to_json(self, *args, **kwargs) -> dict:
         """Returns a JSON-ish dictionary."""
         json = super().to_json(*args, **kwargs)
