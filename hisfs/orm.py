@@ -158,7 +158,7 @@ class File(BasicFile):  # pylint: disable=R0901
     @property
     def is_image(self) -> bool:
         """Determines whether this file is an image."""
-        return self.metadata.mimetype in IMAGE_MIMETYPES
+        return self.mimetype in IMAGE_MIMETYPES
 
     def thumbnail(self, resolution: Tuple[int, int]) -> Thumbnail:
         """Returns a thumbnail with the respective resolution."""
@@ -218,12 +218,13 @@ class Quota(FSModel):
     @property
     def files(self) -> ModelSelect:
         """Yields file records of the respective customer."""
-        return File.select().where(File.customer == self.customer)
+        return File.select(File, FileDBFile).join(FileDBFile).where(
+            File.customer == self.customer)
 
     @property
     def used(self) -> int:
         """Returns used space."""
-        return sum(file.metadata.size for file in self.files.iterator())
+        return sum(file.size for file in self.files.iterator())
 
     @property
     def free(self) -> int:
