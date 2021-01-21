@@ -93,6 +93,11 @@ class BasicFile(FSModel):
         """Returns the access count."""
         return self.filedb_file.accessed
 
+    @property
+    def is_image(self) -> bool:
+        """Determines whether this file is an image."""
+        return self.mimetype in IMAGE_MIMETYPES
+
     def stream(self) -> Response:
         """Returns HTTP stream."""
         return self.filedb_file.stream()
@@ -154,11 +159,6 @@ class File(BasicFile):  # pylint: disable=R0901
                 name, customer, bytes_, rename=rename, suffix=suffix+1)
 
         raise FileExists(file)
-
-    @property
-    def is_image(self) -> bool:
-        """Determines whether this file is an image."""
-        return self.mimetype in IMAGE_MIMETYPES
 
     def thumbnail(self, resolution: Tuple[int, int]) -> Thumbnail:
         """Returns a thumbnail with the respective resolution."""
