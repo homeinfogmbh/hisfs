@@ -44,7 +44,8 @@ class FSModel(JSONModel):
 class BasicFile(FSModel):
     """Common files model."""
 
-    filedb_file = ForeignKeyField(FileDBFile, column_name='filedb_file')
+    filedb_file = ForeignKeyField(
+        FileDBFile, column_name='filedb_file', lazy_load=False)
 
     @classmethod
     def select(cls, *args, payload: bool = False, **kwargs):
@@ -75,7 +76,7 @@ class BasicFile(FSModel):
     @property
     def size(self) -> int:
         """Returns the file size."""
-        return self.filedb_Thumbnailfile.size
+        return self.filedb_file.size
 
     @property
     def created(self) -> datetime:
@@ -126,7 +127,8 @@ class File(BasicFile):  # pylint: disable=R0901
     """Inode database model for the virtual filesystem."""
 
     name = CharField(255, column_name='name')
-    customer = ForeignKeyField(Customer, column_name='customer')
+    customer = ForeignKeyField(
+        Customer, column_name='customer', lazy_load=False)
 
     @classmethod
     def add(cls, name: str, customer: Union[Customer, int], bytes_: bytes, *,
@@ -169,7 +171,7 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
 
     file = ForeignKeyField(
         File, column_name='file', backref='thumbnails', on_delete='CASCADE',
-        on_update='CASCADE')
+        on_update='CASCADE', lazy_load=False)
     size_x = IntegerField()
     size_y = IntegerField()
 
@@ -202,7 +204,8 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
 class Quota(FSModel):
     """Quota settings for a customer."""
 
-    customer = ForeignKeyField(Customer, column_name='customer')
+    customer = ForeignKeyField(
+        Customer, column_name='customer', on_delete='CASCADE', lazy_load=False)
     quota = BigIntegerField()   # Quota in bytes.
 
     @classmethod
