@@ -105,15 +105,17 @@ class BasicFile(FSModel):
 
         return type(self).select(payload=True).where(type(self).id == self.id)
 
-    def to_json(self, *args, **kwargs) -> dict:
+    def to_json(self, **_) -> dict:
         """Returns a JSON-ish dictionary."""
-        json = super().to_json(*args, **kwargs)
-
-        if self.filedb_file:
-            filedb_json = self.filedb_file.to_json(*args, **kwargs)
-            json = {**filedb_json, **json}
-
-        return json
+        return {
+            'id': self.id,
+            'mimetype': self.mimetype,
+            'sha256sum': self.sha256sum,
+            'size': self.size,
+            'created': self.created,
+            'lastAccess': self.last_access,
+            'accessed': self.accessed
+        }
 
     def save(self, *args, **kwargs) -> int:
         """Saves the filedb.File first."""
