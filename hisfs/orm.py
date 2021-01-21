@@ -108,7 +108,8 @@ class BasicFile(FSModel):
             if self.file.bytes is not None:
                 return self
 
-        return type(self).select(payload=True).where(type(self).id == self.id)
+        cls = type(self)
+        return cls.select(payload=True).where(cls.id == self.id).get()
 
     def to_json(self, **_) -> dict:
         """Returns a JSON-ish dictionary."""
