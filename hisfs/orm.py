@@ -170,11 +170,11 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
     def from_file(cls, file: File, resolution: Tuple[int, int]) -> Thumbnail:
         """Creates a thumbnail from the respective file."""
         size_x, size_y = resolution
+        condition = cls.file == file
+        condition &= (cls.size_x == size_x) | (cls.size_y == size_y)
 
         with suppress(cls.DoesNotExist):
-            return cls.get(
-                (cls.file == file)
-                & ((cls.size_x == size_x) | (cls.size_y == size_y)))
+            return cls.select(cascade=True).where(condition).get()
 
         filedb_file = file.filedb_file
 
