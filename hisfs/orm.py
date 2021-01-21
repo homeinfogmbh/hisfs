@@ -13,7 +13,7 @@ from peewee import ForeignKeyField
 from peewee import IntegerField
 from peewee import ModelSelect
 
-from filedb import META_FIELDS, File as FileDBFile
+from filedb import File as FileDBFile
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
@@ -48,15 +48,12 @@ class BasicFile(FSModel):
         FileDBFile, column_name='filedb_file', lazy_load=False)
 
     @classmethod
-    def select(cls, *args, payload: bool = False, **kwargs):
+    def select(cls, *args, cascade: bool = False, **kwargs):
         """Makes a select with or without bytes."""
-        if args or kwargs:
-            return super().select(*args, **kwargs)
-
-        if payload:
+        if cascade:
             return super().select(cls, FileDBFile).join(FileDBFile)
 
-        return super().select(cls, *META_FIELDS).join(FileDBFile)
+        return super().select(*args, **kwargs)
 
     @property
     def bytes(self) -> bytes:
@@ -101,15 +98,6 @@ class BasicFile(FSModel):
     def stream(self) -> Response:
         """Returns HTTP stream."""
         return self.filedb_file.stream()
-
-    def with_payload(self):
-        """Returns the file with payload."""
-        with suppress(AttributeError):
-            if self.file.bytes is not None:
-                return self
-
-        cls = type(self)
-        return cls.select(payload=True).where(cls.id == self.id).get()
 
     def to_json(self, **_) -> dict:
         """Returns a JSON-ish dictionary."""

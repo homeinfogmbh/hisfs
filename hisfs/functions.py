@@ -21,7 +21,7 @@ def get_files() -> ModelSelect:
     if not ACCOUNT.root:
         condition &= File.customer == CUSTOMER.id
 
-    return File.select(payload=False).where(condition)
+    return File.select(cascade=True).where(condition)
 
 
 def get_file(file_id: Union[int, File], *,

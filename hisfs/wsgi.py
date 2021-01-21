@@ -108,8 +108,6 @@ def get(file: File) -> Union[Binary, JSON, Response]:
     if 'metadata' in request.args:
         return JSON(file.to_json())
 
-    file = file.with_payload()
-
     if 'stream' in request.args:
         return file.stream()
 
