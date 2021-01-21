@@ -13,6 +13,7 @@ from hisfs.config import DEFAULT_QUOTA, LOG_FORMAT
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import QuotaExceeded
 from hisfs.exceptions import UnsupportedFileType
+from hisfs.functions import get_file, get_files
 from hisfs.messages import FILE_CREATED
 from hisfs.messages import FILE_DELETED
 from hisfs.messages import FILE_EXISTS
@@ -79,7 +80,7 @@ def with_file(function: Callable) -> Callable:
             condition &= File.customer == CUSTOMER.id
 
         try:
-            file = File.get(condition)
+            file = get_file(ident)
         except File.DoesNotExist:
             return NO_SUCH_FILE
 
@@ -93,8 +94,7 @@ def with_file(function: Callable) -> Callable:
 def list_() -> JSON:
     """Lists the customer's files."""
 
-    return JSON([file.to_json() for file in File.select().where(
-        File.customer == CUSTOMER.id)])
+    return JSON([file.to_json() for file in get_files()])
 
 
 @authenticated
