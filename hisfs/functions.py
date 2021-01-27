@@ -1,8 +1,6 @@
 """External functions."""
 
-from typing import Union
-
-from peewee import ModelSelect
+from typing import Iterator, Union
 
 from his import ACCOUNT, CUSTOMER
 
@@ -13,7 +11,7 @@ from hisfs.orm import File
 __all__ = ['get_file', 'get_files']
 
 
-def get_files() -> ModelSelect:
+def get_files() -> Iterator[File]:
     """Selects files."""
 
     condition = True
@@ -21,7 +19,7 @@ def get_files() -> ModelSelect:
     if not ACCOUNT.root:
         condition &= File.customer == CUSTOMER.id
 
-    return File.select(cascade=True).where(condition)
+    return File.select(cascade=True).where(condition).iterator()
 
 
 def get_file(file_id: Union[int, File], *,
