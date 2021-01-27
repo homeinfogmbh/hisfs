@@ -13,7 +13,7 @@ from peewee import ForeignKeyField
 from peewee import IntegerField
 from peewee import ModelSelect
 
-from filedb import File as FileDBFile
+from filedb import META_FIELDS, File as FileDBFile
 from mdb import Customer
 from peeweeplus import MySQLDatabase, JSONModel
 
@@ -48,12 +48,19 @@ class BasicFile(FSModel):
         FileDBFile, column_name='filedb_file', lazy_load=False)
 
     @classmethod
-    def select(cls, *args, cascade: bool = False, **kwargs):
+    def select(cls, *args, cascade: bool = False, shallow: bool = False,
+               **kwargs) -> ModelSelect:
         """Makes a select with or without bytes."""
-        if cascade:
-            return super().select(cls, FileDBFile).join(FileDBFile)
+        if not cascade:
+            return super().select(*args, **kwargs)
 
-        return super().select(*args, **kwargs)
+        if shallow:
+            args = {cls, *META_FIELDS, *args}
+        else:
+            args = {cls, FileDBFile, *args}
+
+        return super().select(*args, **kwargs).join(FileDBFile)
+
 
     @property
     def bytes(self) -> bytes:

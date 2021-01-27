@@ -1,6 +1,8 @@
 """External functions."""
 
-from typing import Iterator, Union
+from typing import Union
+
+from peewee import ModelSelect
 
 from his import ACCOUNT, CUSTOMER
 
@@ -11,7 +13,7 @@ from hisfs.orm import File
 __all__ = ['get_file', 'get_files']
 
 
-def get_files() -> Iterator[File]:
+def get_files(shallow: bool = True) -> ModelSelect:
     """Selects files."""
 
     condition = True
@@ -19,7 +21,7 @@ def get_files() -> Iterator[File]:
     if not ACCOUNT.root:
         condition &= File.customer == CUSTOMER.id
 
-    return File.select(cascade=True).where(condition).iterator()
+    return File.select(cascade=True, shallow=shallow).where(condition)
 
 
 def get_file(file_id: Union[int, File], *,
@@ -30,7 +32,7 @@ def get_file(file_id: Union[int, File], *,
         return None
 
     try:
-        return get_files().where(File.id == file_id).get()
+        return get_files(shallow=False).where(File.id == file_id).get()
     except File.DoesNotExist:
         if exception is None:
             raise
