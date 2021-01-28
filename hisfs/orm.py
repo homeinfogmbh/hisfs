@@ -106,7 +106,7 @@ class BasicFile(FSModel):
         """Returns HTTP stream."""
         return self.filedb_file.stream()
 
-    def to_json(self, **_) -> dict:
+    def to_json(self) -> dict:
         """Returns a JSON-ish dictionary."""
         return {
             'id': self.id,
@@ -164,6 +164,12 @@ class File(BasicFile):  # pylint: disable=R0901
             return Thumbnail.from_file(self, resolution)
 
         raise UnsupportedFileType()
+
+    def to_json(self) -> dict:
+        """Returns a JSON-ish dict."""
+        json = super().to_json()
+        json['name'] = self.name
+        return json
 
 
 class Thumbnail(BasicFile):     # pylint: disable=R0901
