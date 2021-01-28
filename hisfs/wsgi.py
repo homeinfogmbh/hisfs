@@ -94,7 +94,8 @@ def with_file(function: Callable) -> Callable:
 def list_() -> JSON:
     """Lists the customer's files."""
 
-    return JSON([file.to_json() for file in get_files()])
+    files = get_files(shallow=True).iterator()
+    return JSON([file.to_json() for file in files])
 
 
 @authenticated
