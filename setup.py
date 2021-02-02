@@ -8,7 +8,7 @@ setup(
     version_format='{tag}',
     setup_requires=['setuptools-git-version'],
     install_requires=[
-        'PIL',
+        'pillow',
         'configlib',
         'filedb',
         'flask',
