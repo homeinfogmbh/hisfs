@@ -5,8 +5,10 @@ from setuptools import setup
 
 setup(
     name='hisfs',
-    version_format='{tag}',
-    setup_requires=['setuptools-git-version'],
+    use_scm_version={
+        "local_scheme": "node-and-timestamp"
+    },
+    setup_requires=['setuptools_scm'],
     install_requires=[
         'pillow',
         'configlib',
