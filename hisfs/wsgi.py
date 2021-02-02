@@ -9,20 +9,11 @@ from peewee import IntegrityError
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import Binary, JSON, JSONMessage
 
-from hisfs.config import DEFAULT_QUOTA, LOG_FORMAT
+from hisfs.config import LOG_FORMAT
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import QuotaExceeded
-from hisfs.exceptions import UnsupportedFileType
-from hisfs.functions import get_file, get_files
-from hisfs.messages import FILE_CREATED
-from hisfs.messages import FILE_DELETED
-from hisfs.messages import FILE_EXISTS
-from hisfs.messages import FILE_IN_USE
-from hisfs.messages import FILES_CREATED
-from hisfs.messages import NO_SUCH_FILE
-from hisfs.messages import QUOTA_EXCEEDED
-from hisfs.messages import READ_ERROR
-from hisfs.orm import File, Quota, Thumbnail
+from hisfs.functions import get_file, get_files, qalloc, try_thumbnail
+from hisfs.orm import File
 
 
 __all__ = ['APPLICATION']
@@ -30,41 +21,6 @@ __all__ = ['APPLICATION']
 
 APPLICATION = Application('hisfs', debug=True)
 DEFAULT_FORMAT = 'png'
-
-
-def _get_quota() -> Quota:
-    """Returns the customer's quota."""
-
-    try:
-        return Quota.get(Quota.customer == CUSTOMER.id)
-    except Quota.DoesNotExist:
-        return Quota(customer=CUSTOMER.id, quota=DEFAULT_QUOTA)
-
-
-def qalloc(bytec: int) -> bool:
-    """Attempts to allocate the respective amount of bytes."""
-
-    try:
-        return _get_quota().alloc(bytec)
-    except QuotaExceeded:
-        raise QUOTA_EXCEEDED from None
-
-
-def try_thumbnail(file: File) -> Union[File, Thumbnail]:
-    """Attempts to return a thumbnail if desired."""
-
-    try:
-        resolution = request.args['thumbnail']
-    except KeyError:
-        return file
-
-    size_x, size_y = resolution.split('x')
-    resolution = (int(size_x), int(size_y))
-
-    try:
-        return file.thumbnail(resolution)
-    except UnsupportedFileType:
-        return file
 
 
 def with_file(function: Callable) -> Callable:
@@ -79,11 +35,7 @@ def with_file(function: Callable) -> Callable:
         if not SESSION.account.root:
             condition &= File.customer == CUSTOMER.id
 
-        try:
-            file = get_file(ident)
-        except File.DoesNotExist:
-            return NO_SUCH_FILE
-
+        file = get_file(ident)
         return function(file, *args, **kwargs)
 
     return wrapper
@@ -126,14 +78,9 @@ def post(name: str) -> JSONMessage:
     data = request.get_data()
     rename = 'rename' in request.args
     qalloc(len(data))
-
-    try:
-        file = File.add(name, CUSTOMER.id, data, rename=rename)
-    except FileExists as file_exists:
-        raise FILE_EXISTS.update(id=file_exists.file.id)
-
+    file = File.add(name, CUSTOMER.id, data, rename=rename)
     file.save()
-    return FILE_CREATED.update(id=file.id)
+    return JSONMessage('The file has been created.', id=file.id, status=201)
 
 
 @authenticated
@@ -155,7 +102,7 @@ def post_multi() -> JSONMessage:
             continue
 
         try:
-            _get_quota().alloc(len(data))
+            qalloc(len(data))
         except QuotaExceeded:
             quota_exceeded.append(name)
             continue
@@ -170,9 +117,9 @@ def post_multi() -> JSONMessage:
             created[name] = file.id
 
     status = 400 if (too_large or quota_exceeded) else 200
-    return FILES_CREATED.update(
-        created=created, existing=existing, too_large=too_large,
-        quota_exceeded=quota_exceeded, status=status)
+    return JSONMessage('The files have been created.', created=created,
+                       existing=existing, too_large=too_large,
+                       quota_exceeded=quota_exceeded, status=status)
 
 
 @authenticated
@@ -181,12 +128,8 @@ def post_multi() -> JSONMessage:
 def delete(file: File) -> JSONMessage:
     """Deletes the respective file."""
 
-    try:
-        file.delete_instance()
-    except IntegrityError:
-        return FILE_IN_USE
-
-    return FILE_DELETED
+    file.delete_instance()
+    return JSONMessage('The file has been deleted.', status=200)
 
 
 @APPLICATION.before_first_request
@@ -198,10 +141,39 @@ def init():
 
 @APPLICATION.errorhandler(FileNotFoundError)
 @APPLICATION.errorhandler(PermissionError)
-def _handle_read_error(_):
+def _handle_read_error(_: Union[FileNotFoundError, PermissionError]):
     """Returns a read error message."""
 
-    return READ_ERROR
+    return JSONMessage('Could not read file.', status=500)
+
+
+@APPLICATION.errorhandler(File.DoesNotExist)
+def _handle_non_existant_file(_: File.DoesNotExist):
+    """Handles non-existant files."""
+
+    return JSONMessage('No such file.', status=404)
+
+
+@APPLICATION.errorhandler(QuotaExceeded)
+def _handle_quota_exceeded(_: QuotaExceeded):
+    """Handles exceeded quotas."""
+
+    return JSONMessage('You have reached your disk space quota.', status=403)
+
+
+@APPLICATION.errorhandler(FileExists)
+def _handle_file_exists(error: FileExists):
+    """Handles file exists errors."""
+
+    return JSONMessage('The file already exists.', id=error.file.id,
+                       status=409)
+
+
+@APPLICATION.errorhandler(IntegrityError)
+def _handle_integrity_error(_: IntegrityError):
+    """Handles intetrity errors."""
+
+    return JSONMessage('The file is currently in use.', status=423)
 
 
 ROUTES = (

@@ -2,15 +2,17 @@
 
 from typing import Union
 
+from flask import request
 from peewee import ModelSelect
 
 from his import CUSTOMER
 
-from hisfs.messages import NO_SUCH_FILE
-from hisfs.orm import File
+from hisfs.config import CONFIG
+from hisfs.exceptions import UnsupportedFileType
+from hisfs.orm import File, Quota, Thumbnail
 
 
-__all__ = ['get_file', 'get_files']
+__all__ = ['get_file', 'get_files', 'get_quota', 'qalloc', 'try_thumbnail']
 
 
 def get_files(shallow: bool = True) -> ModelSelect:
@@ -20,17 +22,39 @@ def get_files(shallow: bool = True) -> ModelSelect:
         File.customer == CUSTOMER.id)
 
 
-def get_file(file_id: Union[int, File], *,
-             exception: Exception = NO_SUCH_FILE) -> File:
+def get_file(file_id: Union[int, File]) -> File:
     """Returns a file by its ID with permission checks."""
 
-    if file_id is None:
-        return None
+    return get_files(shallow=False).where(File.id == file_id).get()
+
+
+def get_quota() -> Quota:
+    """Returns the customer's quota."""
 
     try:
-        return get_files(shallow=False).where(File.id == file_id).get()
-    except File.DoesNotExist:
-        if exception is None:
-            raise
+        return Quota.get(Quota.customer == CUSTOMER.id)
+    except Quota.DoesNotExist:
+        return Quota(customer=CUSTOMER.id, quota=CONFIG.getint('fs', 'quota'))
 
-        raise exception from None
+
+def qalloc(bytec: int) -> bool:
+    """Attempts to allocate the respective amount of bytes."""
+
+    return get_quota().alloc(bytec)
+
+
+def try_thumbnail(file: File) -> Union[File, Thumbnail]:
+    """Attempts to return a thumbnail if desired."""
+
+    try:
+        resolution = request.args['thumbnail']
+    except KeyError:
+        return file
+
+    size_x, size_y = resolution.split('x')
+    resolution = (int(size_x), int(size_y))
+
+    try:
+        return file.thumbnail(resolution)
+    except UnsupportedFileType:
+        return file

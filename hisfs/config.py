@@ -2,13 +2,12 @@
 
 from logging import getLogger
 
-from configlib import load_ini, load_json
+from configlib import loadcfg
 
 
-__all__ = ['CONFIG', 'DEFAULT_QUOTA', 'LOG_FORMAT', 'LOGGER']
+__all__ = ['CONFIG', 'LOG_FORMAT', 'LOGGER']
 
 
-CONFIG = load_ini('hisfs.conf')
-DEFAULT_QUOTA = int(CONFIG['fs']['quota'])
+CONFIG = loadcfg('hisfs.conf')
 LOG_FORMAT = '[%(levelname)s] %(name)s: %(message)s'
 LOGGER = getLogger('hisfs')
