@@ -9,6 +9,7 @@ from typing import Tuple, Union
 from flask import Response
 from peewee import BigIntegerField
 from peewee import CharField
+from peewee import DateTimeField
 from peewee import ForeignKeyField
 from peewee import IntegerField
 from peewee import ModelSelect
@@ -33,7 +34,7 @@ PATHSEP = '/'
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
 
-class FSModel(JSONModel):
+class FSModel(JSONModel):   # pylint: disable=R0903
     """Basic immobit model."""
 
     class Meta:     # pylint: disable=C0111,R0903
@@ -134,6 +135,7 @@ class File(BasicFile):  # pylint: disable=R0901
     name = CharField(255, column_name='name')
     customer = ForeignKeyField(
         Customer, column_name='customer', lazy_load=False)
+    created = DateTimeField(null=True, default=datetime.now)
 
     @classmethod
     def add(cls, name: str, customer: Union[Customer, int], bytes_: bytes, *,
@@ -169,6 +171,7 @@ class File(BasicFile):  # pylint: disable=R0901
         """Returns a JSON-ish dict."""
         json = super().to_json()
         json['name'] = self.name
+        json['created'] = self.created.isoformat() if self.created else None
         return json
 
 
