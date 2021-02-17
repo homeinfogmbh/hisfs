@@ -114,7 +114,6 @@ class BasicFile(FSModel):
             'mimetype': self.mimetype,
             'sha256sum': self.sha256sum,
             'size': self.size,
-            'created': self.created.isoformat(),
             'lastAccess':
                 None if self.last_access is None
                 else self.last_access.isoformat(),
