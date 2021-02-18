@@ -45,8 +45,7 @@ class FSModel(JSONModel):   # pylint: disable=R0903
 class BasicFile(FSModel):
     """Common files model."""
 
-    filedb_file = ForeignKeyField(
-        FileDBFile, column_name='filedb_file', lazy_load=False)
+    file = ForeignKeyField(FileDBFile, column_name='file', lazy_load=False)
 
     @classmethod
     def select(cls, *args, cascade: bool = False, shallow: bool = False,
@@ -66,37 +65,37 @@ class BasicFile(FSModel):
     @property
     def bytes(self) -> bytes:
         """Returns the bytes."""
-        return self.filedb_file.bytes
+        return self.file.bytes
 
     @property
     def mimetype(self) -> str:
         """Returns the MIME type."""
-        return self.filedb_file.mimetype
+        return self.file.mimetype
 
     @property
     def sha256sum(self) -> str:
         """Returns the SHA-256 checksum."""
-        return self.filedb_file.sha256sum
+        return self.file.sha256sum
 
     @property
     def size(self) -> int:
         """Returns the file size."""
-        return self.filedb_file.size
+        return self.file.size
 
     @property
     def created(self) -> datetime:
         """Returns the create datetime."""
-        return self.filedb_file.created
+        return self.file.created
 
     @property
     def last_access(self) -> datetime:
         """Returns the last access datetime."""
-        return self.filedb_file.last_access
+        return self.file.last_access
 
     @property
     def accessed(self) -> int:
         """Returns the access count."""
-        return self.filedb_file.accessed
+        return self.file.accessed
 
     @property
     def is_image(self) -> bool:
@@ -105,7 +104,7 @@ class BasicFile(FSModel):
 
     def stream(self) -> Response:
         """Returns HTTP stream."""
-        return self.filedb_file.stream()
+        return self.file.stream()
 
     def to_json(self) -> dict:
         """Returns a JSON-ish dictionary."""
@@ -122,8 +121,8 @@ class BasicFile(FSModel):
 
     def save(self, *args, **kwargs) -> int:
         """Saves the filedb.File first."""
-        if self.filedb_file:
-            self.filedb_file.save(*args, **kwargs)
+        if self.file:
+            self.file.save(*args, **kwargs)
 
         return super().save(*args, **kwargs)
 
@@ -150,7 +149,7 @@ class File(BasicFile):  # pylint: disable=R0901
             file = cls()
             file.name = name
             file.customer = customer
-            file.filedb_file = FileDBFile.from_bytes(bytes_)
+            file.file = FileDBFile.from_bytes(bytes_)
             return file
 
         if rename:
@@ -177,34 +176,32 @@ class File(BasicFile):  # pylint: disable=R0901
 class Thumbnail(BasicFile):     # pylint: disable=R0901
     """An image thumbnail."""
 
-    file = ForeignKeyField(
-        File, column_name='file', backref='thumbnails', on_delete='CASCADE',
+    parent = ForeignKeyField(
+        File, column_name='parent', backref='thumbnails', on_delete='CASCADE',
         on_update='CASCADE', lazy_load=False)
     size_x = IntegerField()
     size_y = IntegerField()
 
     @classmethod
-    def from_file(cls, file: File, resolution: Tuple[int, int]) -> Thumbnail:
-        """Creates a thumbnail from the respective file."""
+    def from_file(cls, parent: File, resolution: Tuple[int, int]) -> Thumbnail:
+        """Creates a thumbnail from the respective parent file."""
         size_x, size_y = resolution
-        condition = cls.file == file
+        condition = cls.parent == parent
         condition &= (cls.size_x == size_x) | (cls.size_y == size_y)
 
         with suppress(cls.DoesNotExist):
             return cls.select(cascade=True).where(condition).get()
 
-        filedb_file = file.filedb_file
-
         try:
             bytes_, resolution = gen_thumbnail(
-                filedb_file.bytes, resolution, filedb_file.mimetype)
+                parent.bytes, resolution, parent.mimetype)
         except NoThumbnailRequired:
-            return file
+            return parent
 
         thumbnail = cls()
-        thumbnail.file = file
+        thumbnail.parent = parent
         thumbnail.size_x, thumbnail.size_y = resolution
-        thumbnail.filedb_file = FileDBFile.from_bytes(bytes_, save=True)
+        thumbnail.file = FileDBFile.from_bytes(bytes_, save=True)
         thumbnail.save()
         return thumbnail
 
