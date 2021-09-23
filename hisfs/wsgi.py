@@ -4,12 +4,12 @@ from logging import INFO, basicConfig
 from typing import Callable, Union
 
 from flask import Response, request
-from peewee import IntegrityError
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import Binary, JSON, JSONMessage
 
 from hisfs.config import LOG_FORMAT
+from hisfs.errors import ERRORS
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import QuotaExceeded
 from hisfs.functions import get_file, get_files, qalloc, try_thumbnail
@@ -139,35 +139,6 @@ def init():
     basicConfig(level=INFO, format=LOG_FORMAT)
 
 
-@APPLICATION.errorhandler(File.DoesNotExist)
-def _handle_non_existant_file(_: File.DoesNotExist):
-    """Handles non-existant files."""
-
-    return JSONMessage('No such file.', status=404)
-
-
-@APPLICATION.errorhandler(QuotaExceeded)
-def _handle_quota_exceeded(_: QuotaExceeded):
-    """Handles exceeded quotas."""
-
-    return JSONMessage('You have reached your disk space quota.', status=403)
-
-
-@APPLICATION.errorhandler(FileExists)
-def _handle_file_exists(error: FileExists):
-    """Handles file exists errors."""
-
-    return JSONMessage('The file already exists.', id=error.file.id,
-                       status=409)
-
-
-@APPLICATION.errorhandler(IntegrityError)
-def _handle_integrity_error(_: IntegrityError):
-    """Handles intetrity errors."""
-
-    return JSONMessage('The file is currently in use.', status=423)
-
-
 ROUTES = (
     ('GET', '/', list_),
     ('GET', '/<int:ident>', get),
@@ -176,3 +147,4 @@ ROUTES = (
     ('DELETE', '/<int:ident>', delete)
 )
 APPLICATION.add_routes(ROUTES)
+APPLICATION.register_error_handlers(ERRORS)
