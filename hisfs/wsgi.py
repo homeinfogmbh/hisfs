@@ -139,14 +139,6 @@ def init():
     basicConfig(level=INFO, format=LOG_FORMAT)
 
 
-@APPLICATION.errorhandler(FileNotFoundError)
-@APPLICATION.errorhandler(PermissionError)
-def _handle_read_error(_: Union[FileNotFoundError, PermissionError]):
-    """Returns a read error message."""
-
-    return JSONMessage('Could not read file.', status=500)
-
-
 @APPLICATION.errorhandler(File.DoesNotExist)
 def _handle_non_existant_file(_: File.DoesNotExist):
     """Handles non-existant files."""
