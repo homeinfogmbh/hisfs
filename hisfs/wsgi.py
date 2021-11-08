@@ -4,6 +4,7 @@ from logging import INFO, basicConfig
 from typing import Callable, Union
 
 from flask import Response, request
+from peewee import IntegrityError
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import Binary, JSON, JSONMessage
@@ -128,7 +129,11 @@ def post_multi() -> JSONMessage:
 def delete(file: File) -> JSONMessage:
     """Deletes the respective file."""
 
-    file.delete_instance()
+    try:
+        file.delete_instance()
+    except IntegrityError:
+        return JSONMessage('The file is currently in use.', status=423)
+
     return JSONMessage('The file has been deleted.', status=200)
 
 

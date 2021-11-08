@@ -1,7 +1,5 @@
 """Common errors."""
 
-from peewee import IntegrityError
-
 from wsgilib import JSONMessage
 
 from hisfs.exceptions import FileExists, UnsupportedFileType, QuotaExceeded
@@ -18,7 +16,5 @@ ERRORS = {
     UnsupportedFileType: lambda _: JSONMessage(
         'Unsupported file type.', status=400),
     QuotaExceeded: lambda _: JSONMessage(
-        'You have reached your disk space quota.', status=403),
-    IntegrityError: lambda _: JSONMessage(
-        'The file is currently in use.', status=423)
+        'You have reached your disk space quota.', status=403)
 }
