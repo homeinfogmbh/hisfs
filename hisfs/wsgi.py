@@ -112,8 +112,7 @@ def post_multi() -> JSONMessage:
         try:
             file = File.add(name, CUSTOMER.id, data, rename=rename)
         except FileExists as file_exists:
-            file = file_exists.file
-            existing[file.name] = file.id
+            existing[file_exists.file.name] = file_exists.file.id
             continue
 
         try:
