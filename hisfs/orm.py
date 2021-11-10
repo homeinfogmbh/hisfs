@@ -34,10 +34,11 @@ PATHSEP = '/'
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
 
-def get_suffixed_name(filename: Path, suffix: int) -> str:
+def get_suffixed_name(name: str, suffix: int) -> str:
     """Returns a collision-avoiding name."""
 
-    return f'{filename.stem} ({suffix}){filename.suffix}'
+    path = Path(name)
+    return f'{path.stem} ({suffix}){path.suffix}'
 
 
 class FSModel(JSONModel):   # pylint: disable=R0903
