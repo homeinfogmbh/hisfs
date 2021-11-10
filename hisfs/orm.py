@@ -37,8 +37,12 @@ IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 def get_suffixed_name(name: str, suffix: int) -> str:
     """Returns a collision-avoiding name."""
 
-    path = Path(name)
-    return f'{path.stem} ({suffix}){path.suffix}'
+    suffixes = ''.join((stem := Path(name)).suffixes)
+
+    while stem.suffixes:
+        stem = Path(stem.stem)
+
+    return f'{stem} ({suffix}){suffixes}'
 
 
 class FSModel(JSONModel):   # pylint: disable=R0903
