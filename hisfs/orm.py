@@ -34,6 +34,12 @@ PATHSEP = '/'
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
 
+def get_suffixed_name(filename: Path, suffix: int) -> str:
+    """Returns a collision-avoiding name."""
+
+    return f'{filename.stem} ({suffix}){filename.suffix}'
+
+
 class FSModel(JSONModel):   # pylint: disable=R0903
     """Basic immobit model."""
 
@@ -139,24 +145,20 @@ class File(BasicFile):  # pylint: disable=R0901
     def add(cls, name: str, customer: Union[Customer, int], bytes_: bytes, *,
             rename: bool = False, suffix: int = 0) -> File:
         """Adds the respective file."""
-        if rename and suffix:
-            path = Path(name)
-            name = f'{path.stem} ({suffix}){path.suffix}'
+        name_ = get_suffixed_name(name, suffix) if rename and suffix else name
 
         try:
-            file = cls.get((cls.name == name) & (cls.customer == customer))
+            file = cls.get((cls.name == name_) & (cls.customer == customer))
         except cls.DoesNotExist:
-            file = cls()
-            file.name = name
-            file.customer = customer
-            file.file = FileDBFile.from_bytes(bytes_)
-            return file
+            return cls(
+                name=name_, customer=customer,
+                file=FileDBFile.from_bytes(bytes_)
+            )
 
-        if rename:
-            return cls.add(
-                name, customer, bytes_, rename=rename, suffix=suffix+1)
+        if not rename:
+            raise FileExists(file)
 
-        raise FileExists(file)
+        return cls.add(name, customer, bytes_, rename=rename, suffix=suffix+1)
 
     def thumbnail(self, resolution: Tuple[int, int]) -> Thumbnail:
         """Returns a thumbnail with the respective resolution."""
