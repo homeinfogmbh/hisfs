@@ -120,7 +120,7 @@ def post_multi() -> JSONMessage:
             file.save()
             created[name] = file.id
 
-    status = 400 if (too_large or quota_exceeded) else 200
+    status = 400 if any([too_large, quota_exceeded, data_errors]) else 200
     return JSONMessage(
         'The files have been created.', created=created, existing=existing,
         too_large=too_large, data_errors=data_errors,
