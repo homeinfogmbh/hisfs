@@ -7,7 +7,7 @@ from flask import Response, request
 from peewee import DataError, IntegrityError
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
-from wsgilib import Binary, JSON, JSONMessage
+from wsgilib import Binary, JSON, JSONMessage, get_bool
 
 from hisfs.config import LOG_FORMAT
 from hisfs.errors import ERRORS
@@ -77,9 +77,8 @@ def post(name: str) -> JSONMessage:
     """Adds a new file."""
 
     data = request.get_data()
-    rename = 'rename' in request.args
     qalloc(len(data))
-    file = File.add(name, CUSTOMER.id, data, rename=rename)
+    file = File.add(name, CUSTOMER.id, data, rename=get_bool('rename'))
     file.save()
     return JSONMessage('The file has been created.', id=file.id, status=201)
 
@@ -89,7 +88,7 @@ def post(name: str) -> JSONMessage:
 def post_multi() -> JSONMessage:
     """Adds multiple new files."""
 
-    rename = 'rename' in request.args
+    rename = get_bool('rename')
     created = {}
     existing = {}
     too_large = []
