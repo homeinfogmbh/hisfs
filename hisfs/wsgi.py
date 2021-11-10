@@ -114,11 +114,15 @@ def post_multi() -> JSONMessage:
         except FileExists as file_exists:
             file = file_exists.file
             existing[file.name] = file.id
+            continue
+
+        try:
+            file.save()
         except DataError as data_error:
             data_errors[name] = data_error.args
-        else:
-            file.save()
-            created[name] = file.id
+            continue
+
+        created[name] = file.id
 
     status = 400 if any([too_large, quota_exceeded, data_errors]) else 200
     return JSONMessage(
