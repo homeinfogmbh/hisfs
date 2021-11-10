@@ -4,7 +4,7 @@ from logging import INFO, basicConfig
 from typing import Callable, Union
 
 from flask import Response, request
-from peewee import IntegrityError
+from peewee import DataError, IntegrityError
 
 from his import CUSTOMER, SESSION, authenticated, authorized, Application
 from wsgilib import Binary, JSON, JSONMessage
@@ -93,6 +93,7 @@ def post_multi() -> JSONMessage:
     created = {}
     existing = {}
     too_large = []
+    data_errors = {}
     quota_exceeded = []
 
     for name, file_storage in request.files.items():
@@ -113,14 +114,17 @@ def post_multi() -> JSONMessage:
         except FileExists as file_exists:
             file = file_exists.file
             existing[file.name] = file.id
+        except DataError as data_error:
+            data_errors[name] = data_error.args
         else:
             file.save()
             created[name] = file.id
 
     status = 400 if (too_large or quota_exceeded) else 200
-    return JSONMessage('The files have been created.', created=created,
-                       existing=existing, too_large=too_large,
-                       quota_exceeded=quota_exceeded, status=status)
+    return JSONMessage(
+        'The files have been created.', created=created, existing=existing,
+        too_large=too_large, data_errors=data_errors,
+        quota_exceeded=quota_exceeded, status=status)
 
 
 @authenticated
