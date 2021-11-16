@@ -143,7 +143,7 @@ class File(BasicFile):  # pylint: disable=R0901
 
     name = CharField(255, column_name='name')
     customer = ForeignKeyField(
-        Customer, column_name='customer', lazy_load=False)
+        Customer, column_name='customer', on_delete='CASCADE', lazy_load=False)
     created = DateTimeField(null=True, default=datetime.now)
 
     @classmethod
