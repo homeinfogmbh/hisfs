@@ -7,7 +7,7 @@ from peewee import ModelSelect
 
 from his import CUSTOMER
 
-from hisfs.config import CONFIG
+from hisfs.config import get_config
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.orm import File, Quota, Thumbnail
 
@@ -34,7 +34,8 @@ def get_quota() -> Quota:
     try:
         return Quota.get(Quota.customer == CUSTOMER.id)
     except Quota.DoesNotExist:
-        return Quota(customer=CUSTOMER.id, quota=CONFIG.getint('fs', 'quota'))
+        return Quota(customer=CUSTOMER.id,
+                     quota=get_config().getint('fs', 'quota'))
 
 
 def qalloc(bytec: int) -> bool:

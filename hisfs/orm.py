@@ -16,9 +16,8 @@ from peewee import ModelSelect
 
 from filedb import META_FIELDS, File as FileDBFile
 from mdb import Customer
-from peeweeplus import MySQLDatabase, JSONModel
+from peeweeplus import MySQLDatabaseProxy, JSONModel
 
-from hisfs.config import CONFIG
 from hisfs.exceptions import FileExists
 from hisfs.exceptions import UnsupportedFileType
 from hisfs.exceptions import NoThumbnailRequired
@@ -29,7 +28,7 @@ from hisfs.thumbnails import gen_thumbnail
 __all__ = ['File', 'Thumbnail', 'Quota']
 
 
-DATABASE = MySQLDatabase.from_config(CONFIG['db'])
+DATABASE = MySQLDatabaseProxy('hisfs')
 PATHSEP = '/'
 IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
 
