@@ -3,7 +3,6 @@
 from io import BytesIO
 from mimetypes import guess_extension
 from tempfile import NamedTemporaryFile
-from typing import Tuple
 
 from PIL import Image
 
@@ -17,8 +16,9 @@ FORMAT_TRANSITIONS = {'JPE': 'JPEG', 'JPG': 'JPEG'}
 
 
 def _get_new_resolution(
-        original_resolution: Tuple[int, int],
-        desired_resolution: Tuple[int, int]) -> Tuple[int, int]:
+        original_resolution: tuple[int, int],
+        desired_resolution: tuple[int, int]
+) -> tuple[int, int]:
     """Returns a new resolution with kept aspect ratio."""
 
     current_x, current_y = original_resolution
@@ -32,11 +32,14 @@ def _get_new_resolution(
     factor = min(fac_x, fac_y)
     new_x = min(max_x, round(current_x * factor))
     new_y = min(max_y, round(current_y * factor))
-    return (new_x, new_y)
+    return new_x, new_y
 
 
-def gen_thumbnail(bytes_: bytes, resolution: Tuple[int, int],
-                  mimetype: str) -> Tuple[bytes, int]:
+def gen_thumbnail(
+        bytes_: bytes,
+        resolution: tuple[int, int],
+        mimetype: str
+) -> tuple[bytes, tuple[int, int]]:
     """Generates a thumbnail for the respective image."""
 
     bytes_io = BytesIO(bytes_)
@@ -53,4 +56,4 @@ def gen_thumbnail(bytes_: bytes, resolution: Tuple[int, int],
         thumbnail.seek(0)
         bytes_ = thumbnail.read()
 
-    return (bytes_, thumbnail_size)
+    return bytes_, thumbnail_size
