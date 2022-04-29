@@ -1,4 +1,4 @@
-"""Thumbnail generaor."""
+"""Thumbnail generator."""
 
 from io import BytesIO
 from mimetypes import guess_extension
