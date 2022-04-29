@@ -19,7 +19,7 @@ FORMAT_TRANSITIONS = {'JPE': 'JPEG', 'JPG': 'JPEG'}
 def _get_new_resolution(
         original_resolution: Tuple[int, int],
         desired_resolution: Tuple[int, int]) -> Tuple[int, int]:
-    """Returns a new ewsolution with kept aspect ratio."""
+    """Returns a new resolution with kept aspect ratio."""
 
     current_x, current_y = original_resolution
     max_x, max_y = desired_resolution
