@@ -25,29 +25,29 @@ from hisfs.exceptions import QuotaExceeded
 from hisfs.thumbnails import gen_thumbnail
 
 
-__all__ = ['File', 'Thumbnail', 'Quota']
+__all__ = ["File", "Thumbnail", "Quota"]
 
 
-DATABASE = MySQLDatabaseProxy('hisfs')
-PATHSEP = '/'
-IMAGE_MIMETYPES = {'image/jpeg', 'image/png'}
+DATABASE = MySQLDatabaseProxy("hisfs")
+PATHSEP = "/"
+IMAGE_MIMETYPES = {"image/jpeg", "image/png"}
 
 
 def get_suffixed_name(name: str, suffix: int) -> str:
     """Returns a collision-avoiding name."""
 
-    suffixes = ''.join((stem := Path(name)).suffixes)
+    suffixes = "".join((stem := Path(name)).suffixes)
 
     while stem.suffixes:
         stem = Path(stem.stem)
 
-    return f'{stem} ({suffix}){suffixes}'
+    return f"{stem} ({suffix}){suffixes}"
 
 
-class FSModel(JSONModel):   # pylint: disable=R0903
+class FSModel(JSONModel):  # pylint: disable=R0903
     """Basic immobit model."""
 
-    class Meta:     # pylint: disable=C0111,R0903
+    class Meta:  # pylint: disable=C0111,R0903
         database = DATABASE
         schema = DATABASE.database
 
@@ -55,11 +55,12 @@ class FSModel(JSONModel):   # pylint: disable=R0903
 class BasicFile(FSModel):
     """Common files model."""
 
-    file = ForeignKeyField(FileDBFile, column_name='file', lazy_load=False)
+    file = ForeignKeyField(FileDBFile, column_name="file", lazy_load=False)
 
     @classmethod
-    def select(cls, *args, cascade: bool = False, shallow: bool = False,
-               **kwargs) -> ModelSelect:
+    def select(
+        cls, *args, cascade: bool = False, shallow: bool = False, **kwargs
+    ) -> ModelSelect:
         """Makes a select with or without bytes."""
         if not cascade:
             return super().select(*args, **kwargs)
@@ -70,7 +71,6 @@ class BasicFile(FSModel):
             args = {cls, FileDBFile, *args}
 
         return super().select(*args, **kwargs).join(FileDBFile)
-
 
     @property
     def bytes(self) -> bytes:
@@ -119,14 +119,14 @@ class BasicFile(FSModel):
     def to_json(self) -> dict:
         """Returns a JSON-ish dictionary."""
         return {
-            'id': self.id,
-            'mimetype': self.mimetype,
-            'sha256sum': self.sha256sum,
-            'size': self.size,
-            'lastAccess':
-                None if self.last_access is None
-                else self.last_access.isoformat(),
-            'accessed': self.accessed
+            "id": self.id,
+            "mimetype": self.mimetype,
+            "sha256sum": self.sha256sum,
+            "size": self.size,
+            "lastAccess": None
+            if self.last_access is None
+            else self.last_access.isoformat(),
+            "accessed": self.accessed,
         }
 
     def save(self, *args, **kwargs) -> int:
@@ -140,14 +140,22 @@ class BasicFile(FSModel):
 class File(BasicFile):  # pylint: disable=R0901
     """Inode database model for the virtual filesystem."""
 
-    name = CharField(255, column_name='name')
+    name = CharField(255, column_name="name")
     customer = ForeignKeyField(
-        Customer, column_name='customer', on_delete='CASCADE', lazy_load=False)
+        Customer, column_name="customer", on_delete="CASCADE", lazy_load=False
+    )
     created = DateTimeField(null=True, default=datetime.now)
 
     @classmethod
-    def add(cls, name: str, customer: Union[Customer, int], bytes_: bytes, *,
-            rename: bool = False, suffix: int = 0) -> File:
+    def add(
+        cls,
+        name: str,
+        customer: Union[Customer, int],
+        bytes_: bytes,
+        *,
+        rename: bool = False,
+        suffix: int = 0,
+    ) -> File:
         """Adds the respective file."""
         name_ = get_suffixed_name(name, suffix) if rename and suffix else name
 
@@ -155,14 +163,13 @@ class File(BasicFile):  # pylint: disable=R0901
             file = cls.get((cls.name == name_) & (cls.customer == customer))
         except cls.DoesNotExist:
             return cls(
-                name=name_, customer=customer,
-                file=FileDBFile.from_bytes(bytes_)
+                name=name_, customer=customer, file=FileDBFile.from_bytes(bytes_)
             )
 
         if not rename:
             raise FileExists(file)
 
-        return cls.add(name, customer, bytes_, rename=rename, suffix=suffix+1)
+        return cls.add(name, customer, bytes_, rename=rename, suffix=suffix + 1)
 
     def thumbnail(self, resolution: Tuple[int, int]) -> Thumbnail:
         """Returns a thumbnail with the respective resolution."""
@@ -174,17 +181,22 @@ class File(BasicFile):  # pylint: disable=R0901
     def to_json(self) -> dict:
         """Returns a JSON-ish dict."""
         json = super().to_json()
-        json['name'] = self.name
-        json['created'] = self.created.isoformat() if self.created else None
+        json["name"] = self.name
+        json["created"] = self.created.isoformat() if self.created else None
         return json
 
 
-class Thumbnail(BasicFile):     # pylint: disable=R0901
+class Thumbnail(BasicFile):  # pylint: disable=R0901
     """An image thumbnail."""
 
     parent = ForeignKeyField(
-        File, column_name='parent', backref='thumbnails', on_delete='CASCADE',
-        on_update='CASCADE', lazy_load=False)
+        File,
+        column_name="parent",
+        backref="thumbnails",
+        on_delete="CASCADE",
+        on_update="CASCADE",
+        lazy_load=False,
+    )
     size_x = IntegerField()
     size_y = IntegerField()
 
@@ -200,7 +212,8 @@ class Thumbnail(BasicFile):     # pylint: disable=R0901
 
         try:
             bytes_, resolution = gen_thumbnail(
-                parent.bytes, resolution, parent.mimetype)
+                parent.bytes, resolution, parent.mimetype
+            )
         except NoThumbnailRequired:
             return parent
 
@@ -216,8 +229,9 @@ class Quota(FSModel):
     """Quota settings for a customer."""
 
     customer = ForeignKeyField(
-        Customer, column_name='customer', on_delete='CASCADE', lazy_load=False)
-    quota = BigIntegerField()   # Quota in bytes.
+        Customer, column_name="customer", on_delete="CASCADE", lazy_load=False
+    )
+    quota = BigIntegerField()  # Quota in bytes.
 
     @classmethod
     def by_customer(cls, customer: Union[Customer, int]) -> Quota:
@@ -227,8 +241,11 @@ class Quota(FSModel):
     @property
     def files(self) -> ModelSelect:
         """Yields file records of the respective customer."""
-        return File.select(File, FileDBFile).join(FileDBFile).where(
-            File.customer == self.customer)
+        return (
+            File.select(File, FileDBFile)
+            .join(FileDBFile)
+            .where(File.customer == self.customer)
+        )
 
     @property
     def used(self) -> int:
@@ -250,5 +267,5 @@ class Quota(FSModel):
     def to_json(self, **kwargs) -> dict:
         """Returns a JSON-ish dictionary."""
         json = super().to_json(**kwargs)
-        json.update({'free': self.free, 'used': self.used})
+        json.update({"free": self.free, "used": self.used})
         return json

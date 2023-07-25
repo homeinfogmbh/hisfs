@@ -17,11 +17,11 @@ from hisfs.functions import get_file, get_files, qalloc, try_thumbnail
 from hisfs.orm import File
 
 
-__all__ = ['APPLICATION']
+__all__ = ["APPLICATION"]
 
 
-APPLICATION = Application('hisfs', debug=True)
-DEFAULT_FORMAT = 'png'
+APPLICATION = Application("hisfs", debug=True)
+DEFAULT_FORMAT = "png"
 
 
 def with_file(function: Callable) -> Callable:
@@ -43,7 +43,7 @@ def with_file(function: Callable) -> Callable:
 
 
 @authenticated
-@authorized('hisfs')
+@authorized("hisfs")
 def list_() -> JSON:
     """Lists the customer's files."""
 
@@ -52,43 +52,43 @@ def list_() -> JSON:
 
 
 @authenticated
-@authorized('hisfs')
+@authorized("hisfs")
 @with_file
 def get(file: File) -> Union[Binary, JSON, Response]:
     """Returns the respective file."""
 
     file = try_thumbnail(file)
 
-    if 'metadata' in request.args:
+    if "metadata" in request.args:
         return JSON(file.to_json())
 
-    if 'stream' in request.args:
+    if "stream" in request.args:
         return file.stream()
 
-    if 'named' in request.args:
+    if "named" in request.args:
         return Binary(file.bytes, filename=file.name)
 
     return Binary(file.bytes)
 
 
 @authenticated
-@authorized('hisfs')
+@authorized("hisfs")
 def post(name: str) -> JSONMessage:
     """Adds a new file."""
 
     data = request.get_data()
     qalloc(len(data))
-    file = File.add(name, CUSTOMER.id, data, rename=get_bool('rename'))
+    file = File.add(name, CUSTOMER.id, data, rename=get_bool("rename"))
     file.save()
-    return JSONMessage('The file has been created.', id=file.id, status=201)
+    return JSONMessage("The file has been created.", id=file.id, status=201)
 
 
 @authenticated
-@authorized('hisfs')
+@authorized("hisfs")
 def post_multi() -> JSONMessage:
     """Adds multiple new files."""
 
-    rename = get_bool('rename')
+    rename = get_bool("rename")
     created = {}
     existing = {}
     too_large = []
@@ -124,13 +124,18 @@ def post_multi() -> JSONMessage:
 
     status = 400 if any([too_large, quota_exceeded, data_errors]) else 200
     return JSONMessage(
-        'The files have been created.', created=created, existing=existing,
-        too_large=too_large, data_errors=data_errors,
-        quota_exceeded=quota_exceeded, status=status)
+        "The files have been created.",
+        created=created,
+        existing=existing,
+        too_large=too_large,
+        data_errors=data_errors,
+        quota_exceeded=quota_exceeded,
+        status=status,
+    )
 
 
 @authenticated
-@authorized('hisfs')
+@authorized("hisfs")
 @with_file
 def delete(file: File) -> JSONMessage:
     """Deletes the respective file."""
@@ -138,9 +143,9 @@ def delete(file: File) -> JSONMessage:
     try:
         file.delete_instance()
     except IntegrityError:
-        return JSONMessage('The file is currently in use.', status=423)
+        return JSONMessage("The file is currently in use.", status=423)
 
-    return JSONMessage('The file has been deleted.', status=200)
+    return JSONMessage("The file has been deleted.", status=200)
 
 
 @APPLICATION.before_first_request
@@ -151,11 +156,11 @@ def init():
 
 
 ROUTES = (
-    ('GET', '/', list_),
-    ('GET', '/<int:ident>', get),
-    ('POST', '/', post_multi),
-    ('POST', '/<name>', post),
-    ('DELETE', '/<int:ident>', delete)
+    ("GET", "/", list_),
+    ("GET", "/<int:ident>", get),
+    ("POST", "/", post_multi),
+    ("POST", "/<name>", post),
+    ("DELETE", "/<int:ident>", delete),
 )
 APPLICATION.add_routes(ROUTES)
 APPLICATION.register_error_handlers(ERRORS)

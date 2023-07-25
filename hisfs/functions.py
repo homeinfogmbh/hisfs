@@ -12,14 +12,15 @@ from hisfs.exceptions import UnsupportedFileType
 from hisfs.orm import File, Quota, Thumbnail
 
 
-__all__ = ['get_file', 'get_files', 'get_quota', 'qalloc', 'try_thumbnail']
+__all__ = ["get_file", "get_files", "get_quota", "qalloc", "try_thumbnail"]
 
 
 def get_files(shallow: bool = True) -> ModelSelect:
     """Selects files."""
 
     return File.select(cascade=True, shallow=shallow).where(
-        File.customer == CUSTOMER.id)
+        File.customer == CUSTOMER.id
+    )
 
 
 def get_file(file_id: Union[int, File]) -> File:
@@ -34,8 +35,7 @@ def get_quota() -> Quota:
     try:
         return Quota.get(Quota.customer == CUSTOMER.id)
     except Quota.DoesNotExist:
-        return Quota(customer=CUSTOMER.id,
-                     quota=get_config().getint('fs', 'quota'))
+        return Quota(customer=CUSTOMER.id, quota=get_config().getint("fs", "quota"))
 
 
 def qalloc(bytec: int) -> bool:
@@ -48,11 +48,11 @@ def try_thumbnail(file: File) -> Union[File, Thumbnail]:
     """Attempts to return a thumbnail if desired."""
 
     try:
-        resolution = request.args['thumbnail']
+        resolution = request.args["thumbnail"]
     except KeyError:
         return file
 
-    size_x, size_y = resolution.split('x')
+    size_x, size_y = resolution.split("x")
     resolution = (int(size_x), int(size_y))
 
     try:

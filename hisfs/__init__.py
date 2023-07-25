@@ -6,4 +6,4 @@ from hisfs.functions import get_file
 from hisfs.orm import File
 
 
-__all__ = ['ERRORS', 'FileExists', 'QuotaExceeded', 'get_file', 'File']
+__all__ = ["ERRORS", "FileExists", "QuotaExceeded", "get_file", "File"]

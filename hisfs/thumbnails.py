@@ -9,15 +9,14 @@ from PIL import Image
 from hisfs.exceptions import NoThumbnailRequired
 
 
-__all__ = ['gen_thumbnail']
+__all__ = ["gen_thumbnail"]
 
 
-FORMAT_TRANSITIONS = {'JPE': 'JPEG', 'JPG': 'JPEG'}
+FORMAT_TRANSITIONS = {"JPE": "JPEG", "JPG": "JPEG"}
 
 
 def _get_new_resolution(
-        original_resolution: tuple[int, int],
-        desired_resolution: tuple[int, int]
+    original_resolution: tuple[int, int], desired_resolution: tuple[int, int]
 ) -> tuple[int, int]:
     """Returns a new resolution with kept aspect ratio."""
 
@@ -36,9 +35,7 @@ def _get_new_resolution(
 
 
 def gen_thumbnail(
-        bytes_: bytes,
-        resolution: tuple[int, int],
-        mimetype: str
+    bytes_: bytes, resolution: tuple[int, int], mimetype: str
 ) -> tuple[bytes, tuple[int, int]]:
     """Generates a thumbnail for the respective image."""
 
@@ -46,11 +43,11 @@ def gen_thumbnail(
     image = Image.open(bytes_io)
     thumbnail_size = _get_new_resolution(image.size, resolution)
     image.thumbnail(thumbnail_size, Image.ANTIALIAS)
-    suffix = guess_extension(mimetype) or '.jpg'
+    suffix = guess_extension(mimetype) or ".jpg"
     frmt = suffix[1:].upper()
     frmt = FORMAT_TRANSITIONS.get(frmt, frmt)
 
-    with NamedTemporaryFile('w+b', suffix=suffix) as thumbnail:
+    with NamedTemporaryFile("w+b", suffix=suffix) as thumbnail:
         image.save(thumbnail, frmt)
         thumbnail.flush()
         thumbnail.seek(0)

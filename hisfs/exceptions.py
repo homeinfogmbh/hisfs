@@ -1,12 +1,7 @@
 """Common exceptions."""
 
 
-__all__ = [
-    'FileExists',
-    'UnsupportedFileType',
-    'NoThumbnailRequired',
-    'QuotaExceeded'
-]
+__all__ = ["FileExists", "UnsupportedFileType", "NoThumbnailRequired", "QuotaExceeded"]
 
 
 class FileExists(Exception):
